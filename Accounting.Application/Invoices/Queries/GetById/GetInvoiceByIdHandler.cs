@@ -63,8 +63,11 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             inv.Contact.Name,
             inv.DateUtc,
             inv.Currency,
+            Money.S2(inv.TotalLineGross),
+            Money.S2(inv.TotalDiscount),
             Money.S2(inv.TotalNet),
             Money.S2(inv.TotalVat),
+            Money.S2(inv.TotalWithholding),
             Money.S2(inv.TotalGross),
             Money.S2(inv.Balance),
             lines,
@@ -74,7 +77,10 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             (int)inv.Type,
             inv.BranchId,
             inv.Branch.Code,
-            inv.Branch.Name
+            inv.Branch.Name,
+            inv.WaybillNumber,
+            inv.WaybillDateUtc,
+            inv.PaymentDueDateUtc
         );
     }
 }

@@ -27,8 +27,11 @@ public record InvoiceDto(
     string ContactName,
     DateTime DateUtc,        // Belge tarihi (iş mantığı)
     string Currency,
+    string TotalLineGross,   // F2 (Added)
+    string TotalDiscount,    // F2 (Added)
     string TotalNet,         // F2
     string TotalVat,         // F2
+    string TotalWithholding, // F2 (Added)
     string TotalGross,       // F2
     string Balance,
     IReadOnlyList<InvoiceLineDto> Lines,
@@ -38,7 +41,10 @@ public record InvoiceDto(
     int Type,
     int BranchId,
     string BranchCode,
-    string BranchName
+    string BranchName,
+    string? WaybillNumber,     // (Added)
+    DateTime? WaybillDateUtc,  // (Added)
+    DateTime? PaymentDueDateUtc // (Added)
 );
 
 public record InvoiceListItemDto(

@@ -150,7 +150,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             { throw new ConcurrencyConflictException(); }
 
             // 5.5) Stok Hareketlerini Senkronize Et (Reset yöntemi)
-            await SyncStockMovements(inv, ct);
+            await SyncStockMovements(inv, itemsMap, ct);
 
             await tx.CommitAsync(ct);
         }
@@ -200,8 +200,11 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             fresh.Contact?.Name ?? "",
             fresh.DateUtc,
             fresh.Currency,
+            Money.S2(fresh.TotalLineGross), // Added
+            Money.S2(fresh.TotalDiscount),  // Added
             Money.S2(fresh.TotalNet),
             Money.S2(fresh.TotalVat),
+            Money.S2(fresh.TotalWithholding), // Added
             Money.S2(fresh.TotalGross),
             Money.S2(fresh.Balance),
             linesDto,
@@ -211,7 +214,10 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             (int)fresh.Type,
             fresh.BranchId,
             fresh.Branch.Code,
-            fresh.Branch.Name
+            fresh.Branch.Name,
+            fresh.WaybillNumber,
+            fresh.WaybillDateUtc,
+            fresh.PaymentDueDateUtc
         );
     }
 
@@ -304,7 +310,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         }
     }
 
-    private async Task SyncStockMovements(Invoice invoice, CancellationToken ct)
+    private async Task SyncStockMovements(Invoice invoice, Dictionary<int, dynamic> itemsMap, CancellationToken ct)
     {
         // 1. Stok hareketi gerekmeyen durum (Expense)
         if (invoice.Type == InvoiceType.Expense) return;
@@ -353,6 +359,12 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         foreach (var line in invoice.Lines)
         {
             if (line.ItemId == null || line.IsDeleted) continue; // Deleted lines don't create movement
+
+            // Check ItemType - Skip if NOT Inventory
+            if (itemsMap != null && itemsMap.TryGetValue(line.ItemId.Value, out var it))
+            {
+                 if ((ItemType)it.type != ItemType.Inventory) continue;
+            }
 
             var absQty = line.Qty; 
             if (absQty == 0) continue;

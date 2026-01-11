@@ -45,7 +45,7 @@ public class InvoiceBalanceService : IInvoiceBalanceService
         var invoice = await _db.Invoices
             .AsNoTracking()
             .Where(i => i.Id == invoiceId)
-            .Select(i => new { i.TotalGross })
+            .Select(i => new { i.TotalGross, i.TotalWithholding })
             .FirstOrDefaultAsync(ct);
 
         if (invoice == null)
@@ -56,7 +56,8 @@ public class InvoiceBalanceService : IInvoiceBalanceService
             .Where(p => p.LinkedInvoiceId == invoiceId)
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
-        var balance = Money.R2(invoice.TotalGross - totalPayments);
+        var payable = invoice.TotalGross - invoice.TotalWithholding;
+        var balance = Money.R2(payable - totalPayments);
 
         return balance;
     }
@@ -114,7 +115,8 @@ public class InvoiceBalanceService : IInvoiceBalanceService
             .Where(p => p.LinkedInvoiceId == invoiceId)
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
-        var balance = Money.R2(invoice.TotalGross - totalPayments);
+        var payable = invoice.TotalGross - invoice.TotalWithholding;
+        var balance = Money.R2(payable - totalPayments);
         invoice.Balance = balance;
 
         // RowVersion otomatik olarak concurrency check yapacak
