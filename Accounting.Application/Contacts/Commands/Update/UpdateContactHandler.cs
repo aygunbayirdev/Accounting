@@ -42,7 +42,7 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
         
         // Derive Name
         string displayName = req.Name;
-        if (req.Type == ContactIdentityType.Person && req.PersonDetails != null)
+        if (req.PersonDetails != null)
         {
             displayName = $"{req.PersonDetails.FirstName} {req.PersonDetails.LastName}".Trim();
         }
@@ -61,23 +61,12 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
         c.IsEmployee = req.IsEmployee;
         c.IsRetail = req.IsRetail;
 
-        // Identity Switch Logic
-        // Remove mismatching details
-        if (req.Type == ContactIdentityType.Person && c.CompanyDetails != null)
-        {
-            _db.CompanyDetails.Remove(c.CompanyDetails);
-            c.CompanyDetails = null;
-        }
-        if (req.Type == ContactIdentityType.Company && c.PersonDetails != null)
-        {
-            _db.PersonDetails.Remove(c.PersonDetails);
-            c.PersonDetails = null;
-        }
-
-        c.Type = req.Type;
-
-        // Update Details
-        if (req.Type == ContactIdentityType.Company && req.CompanyDetails != null)
+        // Identity Logic: If details provided, update/create. If null, LEAVE AS IS or REMOVE?
+        // Command usually sends FULL state. If PersonDetails is null in request, it implies "Remove Person Identity" OR "No Change"?
+        // Typically PUT is full replace. We assume if Details is null, we remove it.
+        
+        // Update Company Details
+        if (req.CompanyDetails != null)
         {
             if (c.CompanyDetails == null) c.CompanyDetails = new CompanyDetails();
             c.CompanyDetails.TaxNumber = req.CompanyDetails.TaxNumber;
@@ -85,7 +74,19 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
             c.CompanyDetails.MersisNo = req.CompanyDetails.MersisNo;
             c.CompanyDetails.TicaretSicilNo = req.CompanyDetails.TicaretSicilNo;
         }
-        else if (req.Type == ContactIdentityType.Person && req.PersonDetails != null)
+        else
+        {
+            // If request has null details, but DB has details -> Remove them?
+            // YES, to switch identity or clean up.
+            if (c.CompanyDetails != null)
+            {
+                _db.CompanyDetails.Remove(c.CompanyDetails);
+                c.CompanyDetails = null;
+            }
+        }
+
+        // Update Person Details
+        if (req.PersonDetails != null)
         {
             if (c.PersonDetails == null) c.PersonDetails = new PersonDetails();
             c.PersonDetails.Tckn = req.PersonDetails.Tckn;
@@ -94,6 +95,17 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
             c.PersonDetails.Title = req.PersonDetails.Title;
             c.PersonDetails.Department = req.PersonDetails.Department;
         }
+        else
+        {
+             if (c.PersonDetails != null)
+            {
+                _db.PersonDetails.Remove(c.PersonDetails);
+                c.PersonDetails = null;
+            }
+        }
+
+        if (req.IsEmployee && c.PersonDetails == null)
+             throw new Exception("Personel (Employee) kaydı mutlaka Şahıs bilgilerini içermelidir.");
 
         // 5) Audit
         c.UpdatedAtUtc = DateTime.UtcNow;
@@ -118,7 +130,6 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
             fresh.BranchId,
             fresh.Code,
             fresh.Name,
-            fresh.Type,
             fresh.IsCustomer,
             fresh.IsVendor,
             fresh.IsEmployee,

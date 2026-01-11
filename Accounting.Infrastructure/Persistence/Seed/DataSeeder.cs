@@ -215,7 +215,6 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[0],
-            Type = ContactIdentityType.Company,
             Code = "CUST001",
             Name = "Mavi Teknoloji A.Ş.",
             IsCustomer = true,
@@ -228,10 +227,9 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[1 % branchIds.Count],
-            Type = ContactIdentityType.Person,
             Code = "RET001",
             Name = "Ahmet Yılmaz",
-            IsCustomer = true,
+            IsCustomer = false,  // Perakende müşteri, kurumsal değil
             IsRetail = true,
             Email = "ahmet.yilmaz@gmail.com",
             Phone = "05325552020",
@@ -242,7 +240,6 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[0],
-            Type = ContactIdentityType.Company,
             Code = "VEND001",
             Name = "Tedarik Gross Ltd.",
             IsVendor = true,
@@ -255,7 +252,6 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[0],
-            Type = ContactIdentityType.Person,
             Code = "EMP001",
             Name = "Mehmet Öz",
             IsEmployee = true,
@@ -272,7 +268,6 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[1 % branchIds.Count],
-            Type = ContactIdentityType.Person,
             Code = "EMP002",
             Name = "Ayşe Demir",
             IsEmployee = true,
@@ -289,7 +284,6 @@ public static class DataSeeder
         contacts.Add(new Contact
         {
             BranchId = branchIds[2 % branchIds.Count],
-            Type = ContactIdentityType.Company,
             Code = "PARTNER01",
             Name = "Ortak Lojistik A.Ş.",
             IsCustomer = true,
@@ -297,6 +291,31 @@ public static class DataSeeder
             Email = "finans@ortaklojistik.com",
             Phone = "08502226060",
             CompanyDetails = new CompanyDetails { TaxNumber = "5555555550", TaxOffice = "Karşıyaka" }
+        });
+
+        // 7. Şahıs Şirketi (Sole Proprietorship) - Hem Şahıs hem Şirket
+        contacts.Add(new Contact
+        {
+            BranchId = branchIds[0],
+            Code = "SOLE001",
+            Name = "Ali Veli - Veli Ticaret",
+            IsCustomer = true,
+            IsVendor = false,
+            Email = "ali.veli@veliticaret.com",
+            Phone = "05559998877",
+            // Hybrid Identity
+            PersonDetails = new PersonDetails 
+            { 
+                Tckn = "55555555550", 
+                FirstName = "Ali", 
+                LastName = "Veli" 
+            },
+            CompanyDetails = new CompanyDetails 
+            { 
+                TaxNumber = "9999999990", 
+                TaxOffice = "Ankara Ostim", 
+                MersisNo = "0555555555500001" 
+            }
         });
 
         db.Contacts.AddRange(contacts);

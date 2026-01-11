@@ -1,6 +1,4 @@
-﻿using Accounting.Domain.Enums;
-
-namespace Accounting.Application.Contacts.Queries.Dto;
+﻿namespace Accounting.Application.Contacts.Queries.Dto;
 
 public record CompanyDetailsDto(
     string? TaxNumber,
@@ -22,7 +20,7 @@ public record ContactDto(
     int BranchId,
     string Code,
     string Name, // Display Name
-    ContactIdentityType Type,
+
     bool IsCustomer,
     bool IsVendor,
     bool IsEmployee,
@@ -42,7 +40,6 @@ public record ContactListItemDto(
     int BranchId,
     string Code,
     string Name,
-    ContactIdentityType Type,
     bool IsCustomer,
     bool IsVendor,
     bool IsEmployee,

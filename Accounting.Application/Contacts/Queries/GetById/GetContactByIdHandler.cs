@@ -3,7 +3,6 @@ using Accounting.Application.Common.Exceptions;
 using Accounting.Application.Common.Extensions;
 using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Contacts.Queries.Dto;
-using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,7 +36,6 @@ public class GetContactByIdHandler : IRequestHandler<GetContactByIdQuery, Contac
             c.BranchId, 
             c.Code, 
             c.Name, 
-            c.Type,
             c.IsCustomer,
             c.IsVendor,
             c.IsEmployee,

@@ -8,7 +8,7 @@ namespace Accounting.Application.Contacts.Commands.Update;
 
 public record UpdateContactCommand(
     int Id,
-    ContactIdentityType Type,
+
     // Flags
     bool IsCustomer,
     bool IsVendor,

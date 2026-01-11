@@ -70,7 +70,6 @@ public class ListContactsHandler : IRequestHandler<ListContactsQuery, ContactLis
                 x.BranchId, 
                 x.Code, 
                 x.Name, 
-                x.Type, 
                 x.IsCustomer, 
                 x.IsVendor, 
                 x.IsEmployee, 

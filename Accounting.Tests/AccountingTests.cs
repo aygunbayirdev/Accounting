@@ -37,7 +37,7 @@ namespace Accounting.Tests
                 var branch = new Branch { Id = 1, Name = "Test Branch", Code = "BR-01" };
                 db.Branches.Add(branch);
                 
-                var contact = new Contact { Id = 1, Name = "Test Customer", Code = "CUS-001", Type = ContactIdentityType.Company, IsCustomer = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
+                var contact = new Contact { Id = 1, Name = "Test Customer", Code = "CUS-001", IsCustomer = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
                 db.Contacts.Add(contact);
 
                 await db.SaveChangesAsync();
@@ -81,7 +81,7 @@ namespace Accounting.Tests
                 var branch = new Branch { Id = 1, Name = "Test Branch", Code = "BR-01" };
                 db.Branches.Add(branch);
                 
-                var contact = new Contact { Id = 5, Name = "Test Vendor", Code = "VEN-005", Type = ContactIdentityType.Company, IsVendor = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
+                var contact = new Contact { Id = 5, Name = "Test Vendor", Code = "VEN-005", IsVendor = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
                 db.Contacts.Add(contact);
 
                 var account = new CashBankAccount { Id = 10, Name = "Main Cash", Code = "CASH-01", Currency = "TRY", BranchId = 1, RowVersion = Array.Empty<byte>() };

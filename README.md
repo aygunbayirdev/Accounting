@@ -177,9 +177,20 @@ public static IQueryable<T> ApplyBranchFilter<T>(
 
 ## 📦 Domain Modülleri
 
-### 1. **Contacts (Cariler)**
-- **Tipler**: Customer (Müşteri), Vendor (Tedarikçi), Employee (Personel)
-- **Özellikler**: CRUD, soft delete, pagination, filtering
+### 1. **Contacts (Cariler) - Tek Kart Yapısı**
+- **Mimari**: Composition Pattern (Hybrid Model)
+- **Yapı**: 
+  - `Contact`: Ana kimlik ve bayraklar (`IsCustomer`, `IsVendor`, `IsEmployee`, `IsRetail`)
+  - `PersonDetails`: Şahıs bilgileri (TCKN, Ad, Soyad) - *Opsiyonel*
+  - `CompanyDetails`: Şirket bilgileri (Vergi No, Daire, Mersis) - *Opsiyonel*
+- **Esneklik (Hibrid Yapı)**:
+  - **Şirket**: Sadece `CompanyDetails` içerir.
+  - **Şahıs**: Sadece `PersonDetails` içerir.
+  - **Şahıs Şirketi**: Hem `PersonDetails` hem `CompanyDetails` içerir (Tek kartta birleşik).
+- **Validasyonlar**:
+  - Personel (`IsEmployee`) ise `PersonDetails` zorunludur.
+  - Cari kart en az bir detay (Şahıs veya Şirket) içermelidir.
+  - Perakende (`IsRetail`) ve Kurumsal (`IsCustomer`) aynı anda olamaz.
 
 ### 2. **Items (Ürün/Hizmetler)**
 - Stok ve hizmet yönetimi
@@ -213,6 +224,17 @@ public static IQueryable<T> ApplyBranchFilter<T>(
 
 ### 8. **Fixed Assets (Demirbaşlar)**
 - Sabit kıymet yönetimi (MVP'de henüz aktif değil)
+
+### 9. **Cheques & Promissory Notes (Çek/Senet)**
+- **Tipler**: Cheque (Çek), PromissoryNote (Senet)
+- **Yönler**: Inbound (Müşteriden alınan), Outbound (Tedarikçiye verilen)
+- **Durumlar**: Pending, Paid, Bounced (Karşılıksız), Endorsed (Ciro)
+- **Özellikler**: vade takibi, tahsilat/ödeme entegrasyonu.
+
+### 10. **Identity & Access Management (IAM)**
+- **Users**: Kullanıcı yönetimi, şifre hashleme, rol atama.
+- **Roles**: Dinamik rol ve izin (Permission) yönetimi.
+- **Güvenlik**: JWT tabanlı, Branch-scoped erişim kontrolü.
 
 ---
 
@@ -534,6 +556,9 @@ Accounting.Application/
 ├── ExpenseLists/
 ├── Stocks/
 ├── Warehouses/
+├── Cheques/
+├── Users/
+├── Roles/
 └── Common/
     ├── Abstractions/ (IAppDbContext)
     ├── Behaviors/ (Validation, Transaction)
@@ -547,7 +572,6 @@ Accounting.Domain/
 │   ├── Stock.cs
 │   └── ...
 ├── Enums/
-│   ├── ContactType.cs
 │   ├── InvoiceType.cs
 │   └── StockMovementType.cs
 └── Common/ (Interfaces)
@@ -566,13 +590,15 @@ Accounting.Infrastructure/
 
 - [x] Invoice → Stock integration (otomatik stok hareketi)
 - [x] Multi-branch stock transfer
+- [x] Item Category support
+- [x] Order Management (Quotes/Orders -> Invoice flow)
+- [x] User authentication & authorization (JWT + Roles)
+- [x] Cheque/Promissory Note Management
+- [x] Multi-Currency Support (Payments/Invoices)
 - [ ] Fixed Asset depreciation calculation
 - [ ] Reporting module (balance sheet, P&L)
-- [x] Item Category support
 - [ ] Excel export support
-- [x] Order Management (Quotes/Orders -> Invoice flow)
-- [ ] User authentication & authorization
-- [ ] Audit log tracking
+- [ ] Audit log tracking (Basic Audit implemented, UI needed)
 - [ ] Email notifications
 
 ---
@@ -581,7 +607,6 @@ Accounting.Infrastructure/
 
 ### Enums Namespace
 Tüm enum'lar `Accounting.Domain.Enums` namespace'inde toplanmıştır:
-- ContactType
 - InvoiceType
 - PaymentDirection
 - ExpenseListStatus

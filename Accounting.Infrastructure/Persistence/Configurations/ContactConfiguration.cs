@@ -17,7 +17,6 @@ public class ContactConfiguration : IEntityTypeConfiguration<Contact>
          .HasMaxLength(32)
          .IsUnicode(true);
 
-        b.Property(x => x.Type).HasConversion<int>();
         b.Property(x => x.Name).HasMaxLength(200).IsRequired();
         
         // Removed: TaxNo
@@ -28,6 +27,8 @@ public class ContactConfiguration : IEntityTypeConfiguration<Contact>
         b.Property(x => x.Phone).HasMaxLength(40);
         b.Property(x => x.Iban).HasMaxLength(34);
         b.Property(x => x.Address).HasMaxLength(500);
+        b.Property(x => x.City).HasMaxLength(200);
+        b.Property(x => x.District).HasMaxLength(200);
         
         // Relations
         b.HasOne(c => c.Branch)
@@ -74,8 +75,7 @@ public class ContactConfiguration : IEntityTypeConfiguration<Contact>
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
         
-        // Index for Type and Flags for filtering
-        b.HasIndex(x => x.Type); 
+        // Index for FLAGS
         b.HasIndex(x => x.IsCustomer);
         b.HasIndex(x => x.IsVendor);
         b.HasIndex(x => x.IsEmployee);

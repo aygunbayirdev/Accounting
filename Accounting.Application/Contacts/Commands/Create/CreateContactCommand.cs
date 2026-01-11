@@ -8,7 +8,7 @@ namespace Accounting.Application.Contacts.Commands.Create;
 
 public record CreateContactCommand(
     int BranchId,
-    ContactIdentityType Type,
+
     // Flags
     bool IsCustomer,
     bool IsVendor,

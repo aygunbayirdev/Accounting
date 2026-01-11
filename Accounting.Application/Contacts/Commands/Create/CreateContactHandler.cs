@@ -19,7 +19,8 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
 
         // Derive Name
         string displayName = req.Name;
-        if (req.Type == ContactIdentityType.Person && req.PersonDetails != null)
+        // If PersonDetails provided, use First+Last as Name (Name param ignored for persons usually, or used as backup)
+        if (req.PersonDetails != null)
         {
             displayName = $"{req.PersonDetails.FirstName} {req.PersonDetails.LastName}".Trim();
         }
@@ -29,7 +30,6 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
             BranchId = req.BranchId,
             Code = code,
             Name = displayName,
-            Type = req.Type,
             
             // Flags
             IsCustomer = req.IsCustomer,
@@ -46,7 +46,7 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
             District = req.District,
 
             // Composition
-            CompanyDetails = (req.Type == ContactIdentityType.Company && req.CompanyDetails != null) 
+            CompanyDetails = (req.CompanyDetails != null) 
                 ? new CompanyDetails 
                 { 
                     TaxNumber = req.CompanyDetails.TaxNumber,
@@ -56,7 +56,7 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
                 } 
                 : null,
 
-            PersonDetails = (req.Type == ContactIdentityType.Person && req.PersonDetails != null)
+            PersonDetails = (req.PersonDetails != null)
                 ? new PersonDetails
                 {
                     Tckn = req.PersonDetails.Tckn,
@@ -68,11 +68,9 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
                 : null
         };
 
-        if (req.Type == ContactIdentityType.Person && entity.PersonDetails == null)
+        if (req.IsEmployee && entity.PersonDetails == null)
         {
-            // Fallback validation or throw? For now just create empty details to avoid null ref if critical? 
-            // Better to validate. Assuming validation happens before or here.
-            throw new Exception("Person details required for Person type contact.");
+            throw new Exception("Personel (Employee) kaydı mutlaka Şahıs bilgilerini içermelidir.");
         }
 
         _db.Contacts.Add(entity);
@@ -83,7 +81,6 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
             entity.BranchId,
             entity.Code,
             entity.Name,
-            entity.Type,
             entity.IsCustomer,
             entity.IsVendor,
             entity.IsEmployee,

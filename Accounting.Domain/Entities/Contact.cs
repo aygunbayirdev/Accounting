@@ -1,5 +1,5 @@
 ﻿using Accounting.Domain.Common;
-using Accounting.Domain.Enums;
+
 
 namespace Accounting.Domain.Entities;
 
@@ -8,9 +8,6 @@ public class Contact : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranc
     public int Id { get; set; }
     public int BranchId { get; set; }
     
-    // Identity Type (Discriminator)
-    public ContactIdentityType Type { get; set; } = ContactIdentityType.Company;
-
     // Flags (Roles)
     public bool IsCustomer { get; set; }
     public bool IsVendor { get; set; }
