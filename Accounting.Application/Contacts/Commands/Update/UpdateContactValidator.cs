@@ -35,6 +35,10 @@ public class UpdateContactValidator : AbstractValidator<UpdateContactCommand>
         RuleFor(x => x.IsCustomer).Equal(false).When(x => x.IsRetail)
             .WithMessage("Perakende müşteri (Retail) aynı zamanda Kurumsal Müşteri (Customer) olamaz.");
             
+        // At least ONE detail must be present (Company OR Person)
+        RuleFor(x => x).Must(x => x.CompanyDetails != null || x.PersonDetails != null)
+            .WithMessage("Cari kart Şahıs veya Şirket bilgilerinden en az birini içermelidir.");
+
         RuleFor(x => x.RowVersion).MustBeValidRowVersion();
     }
 }
