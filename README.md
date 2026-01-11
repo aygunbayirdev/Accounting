@@ -215,15 +215,25 @@ public static IQueryable<T> ApplyBranchFilter<T>(
   - **Vade Takibi**: Ödeme Vade Tarihi (`PaymentDueDateUtc`).
   - **Dövizli Fatura**: Kur (`CurrencyRate`) ve Döviz Cinsi takibi.
 
-#### Tevkifat (Withholding) Nedir?
-KDV'nin bir kısmının satıcıya değil, doğrudan devlete ödenmesidir. Genellikle hizmet sektöründe (temizlik, nakliye, vb.) kullanılır.
-_Örnek: 1000 TL + %20 KDV (%5/10 Tevkifat)_
-- **Matrah**: 1000 TL
-- **KDV (%20)**: 200 TL
-- **Tevkifat (%50 - 5/10)**: 100 TL (KDV'nin yarısı)
-- **Fatura Toplamı**: 1200 TL
-- **Tahsil Edilecek (Ödenecek) Tutar**: 1100 TL (1200 - 100)
-> *Sistem bu hesabı girilen orana (örn. 50) göre otomatik yapar.*
+#### Tevkifat (Withholding) Detayları
+KDV'nin bir kısmının alıcı tarafından kesilip doğrudan vergi dairesine ödenmesidir.
+
+**1. Kapsam (Scope)**
+- **Satır Bazlıdır**: Bir faturada hem tevkifatlı (örn. İşçilik) hem tevkifatsız (örn. Malzeme) kalemler aynı anda bulunabilir. Sistem her satırı ayrı hesaplar.
+- **Hem Hizmet Hem Stok**: Genellikle hizmet sektöründe (Temizlik, Nakliye) yaygın olsa da, bazı stoklu ürünlerde (Hurda, Bakır, Sunta vb.) de tevkifat zorunluluğu vardır. Sistemimizde `Inventory` veya `Service` fark etmeksizin her kaleme tevkifat uygulanabilir.
+
+**2. Hesaplama Mantığı (Logic)**
+Bu sistemde hesaplama şu formülle yapılır:
+> **Alacağınız Para (Balance) = (Matrah + KDV) - Tevkifat Tutarı**
+
+_Örnek Senaryo: 1000 TL + %20 KDV (%5/10 Tevkifat)_
+- **Matrah (Net)**: 1.000 TL
+- **Hesaplanan KDV (%20)**: 200 TL
+- **Uygulanan Tevkifat (5/10)**: 100 TL _(Bu tutarı alıcı sizin adınıza devlete öder)_
+- **Fatura Brüt Toplamı**: 1.200 TL
+- **Cari Hesaba İşleyen (Tahsil Edilecek)**: **1.100 TL** (1200 - 100)
+
+> *Sistemde tevkifat oranını (Rate) girdiğinizde (örn: 50), Tutar (Amount) ve Cari Bakiye (Balance) otomatik hesaplanır.*
 
 ### 4. **Payments (Tahsilat/Tediye)**
 - **Yönler**: In (Tahsilat), Out (Ödeme)
