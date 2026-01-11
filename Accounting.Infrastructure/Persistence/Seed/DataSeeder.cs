@@ -1033,8 +1033,12 @@ public static class DataSeeder
             Permissions.CashBankAccount.Read,
             Permissions.Cheque.Create, Permissions.Cheque.Read, Permissions.Cheque.Update,
             Permissions.ExpenseList.Create, Permissions.ExpenseList.Read, Permissions.ExpenseList.Update, Permissions.ExpenseList.Review,
+            Permissions.ExpenseDefinition.Create, Permissions.ExpenseDefinition.Read, Permissions.ExpenseDefinition.Update,
+            Permissions.FixedAsset.Create, Permissions.FixedAsset.Read, Permissions.FixedAsset.Update,
             Permissions.Category.Read,
-            Permissions.Report.Dashboard, Permissions.Report.ProfitLoss, Permissions.Report.ContactStatement, Permissions.Report.StockStatus
+            Permissions.Report.Dashboard, Permissions.Report.ProfitLoss, Permissions.Report.ContactStatement, Permissions.Report.StockStatus,
+            Permissions.CompanySettings.Read, Permissions.CompanySettings.Update,
+            Permissions.Branch.Read
         };
 
         foreach (var permission in managerPermissions)
@@ -1069,8 +1073,12 @@ public static class DataSeeder
             Permissions.CashBankAccount.Read,
             Permissions.Cheque.Read,
             Permissions.ExpenseList.Read,
+            Permissions.ExpenseDefinition.Read,
+            Permissions.FixedAsset.Read,
             Permissions.Category.Read,
-            Permissions.Report.Dashboard
+            Permissions.Report.Dashboard,
+            Permissions.CompanySettings.Read,
+            Permissions.Branch.Read
         };
 
         foreach (var permission in userPermissions)
