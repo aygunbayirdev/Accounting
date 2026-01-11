@@ -8,7 +8,10 @@ public record CreateInvoiceCommand(
     string DateUtc,
     string Currency,
     List<CreateInvoiceLineDto> Lines,
-    string Type // "Sales", "Purchase" vb.
+    string Type, // "Sales", "Purchase" vb.
+    string? WaybillNumber,
+    string? WaybillDateUtc,
+    string? PaymentDueDateUtc
 ) : IRequest<CreateInvoiceResult>;
 
 public record CreateInvoiceResult(

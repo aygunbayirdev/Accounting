@@ -22,9 +22,20 @@ public class InvoiceLine : IHasTimestamps, ISoftDeletable
     public int VatRate { get; set; }        // 0..100
 
     // Türemiş/saklanan tutarlar (AwayFromZero, 2 hane)
-    public decimal Net { get; set; }        // 18,2
-    public decimal Vat { get; set; }        // 18,2
-    public decimal Gross { get; set; }      // 18,2
+    public decimal Gross { get; set; }      // Brüt (Qty * Price) [DEĞİŞTİ: Eskiden Net/Vat/Gross farklıydı, şimdi standartlaşıyor]
+    
+    public decimal DiscountRate { get; set; }   // İskonto Oranı (%)
+    public decimal DiscountAmount { get; set; } // İskonto Tutarı
+    
+    public decimal Net { get; set; }        // Net/Matrah (Gross - Discount)
+    
+    public decimal Vat { get; set; }        // KDV Tutarı (Net * VatRate)
+    
+    public int WithholdingRate { get; set; }    // Tevkifat Oranı (%) (Örn: 50 = 5/10)
+    public decimal WithholdingAmount { get; set; } // Tevkifat Tutarı (Vat * Rate)
+    
+    public decimal GrandTotal { get; set; } // Genel Toplam (Net + Vat)
+    // Ödenecek (Payable) = GrandTotal - WithholdingAmount (bunu hesaplayabiliriz veya satırda tutabiliriz)
 
     // Timestamps
     public DateTime CreatedAtUtc { get; set; }

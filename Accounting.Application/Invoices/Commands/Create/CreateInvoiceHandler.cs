@@ -31,35 +31,37 @@ public class CreateInvoiceHandler
     {
         var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException("Branch context missing");
 
-        // 1) Tarihi ISO-8601 (UTC) olarak parse et
-        if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture,
-            DateTimeStyles.AdjustToUniversal, out var dateUtc))
-        {
+        // 1) Parse DateUtc
+        if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var dateUtc))
             throw new ArgumentException("DateUtc is invalid.");
-        }
         dateUtc = DateTime.SpecifyKind(dateUtc, DateTimeKind.Utc);
 
-        // 2) Currency normalize
+        // 1.1) Parse Waybill Date & Due Date
+        DateTime? waybillDate = null;
+        if (!string.IsNullOrWhiteSpace(req.WaybillDateUtc))
+        {
+            if (DateTime.TryParse(req.WaybillDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var wbDate))
+                waybillDate = DateTime.SpecifyKind(wbDate, DateTimeKind.Utc);
+        }
+
+        DateTime? dueDate = null;
+        if (!string.IsNullOrWhiteSpace(req.PaymentDueDateUtc))
+        {
+            if (DateTime.TryParse(req.PaymentDueDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var ddDate))
+                dueDate = DateTime.SpecifyKind(ddDate, DateTimeKind.Utc);
+        }
+
+        // 2) Normalize
         var currency = (req.Currency ?? "TRY").ToUpperInvariant();
+        var invType = NormalizeType(req.Type, InvoiceType.Sales);
 
-        // 2.5) Type normalize (Update ile aynı mantık)           // NEW
-        var invType = NormalizeType(req.Type, InvoiceType.Sales); // NEW
-
-        // 3) sign logic removed (All positive)
-
-        // 4) Item veya Expense snapshot (Code/Name/Unit)
-        // Hangi tip fatura kesiyoruz?
+        // 3) Validate Items/Expenses (Fetch Map)
         Dictionary<int, dynamic>? itemsMap = null;
         Dictionary<int, dynamic>? expensesMap = null;
 
         if (invType == InvoiceType.Expense)
         {
-            var expenseIds = req.Lines
-               .Where(x => x.ExpenseDefinitionId.HasValue)
-               .Select(l => l.ExpenseDefinitionId!.Value)
-               .Distinct()
-               .ToList();
-
+            var expenseIds = req.Lines.Where(x => x.ExpenseDefinitionId.HasValue).Select(l => l.ExpenseDefinitionId!.Value).Distinct().ToList();
             expensesMap = await _db.ExpenseDefinitions
                .Where(i => expenseIds.Contains(i.Id))
                .Select(i => new { i.Id, i.Code, i.Name })
@@ -67,35 +69,27 @@ public class CreateInvoiceHandler
         }
         else
         {
-            var itemIds = req.Lines
-               .Where(x => x.ItemId.HasValue)
-               .Select(l => l.ItemId!.Value)
-               .Distinct()
-               .ToList();
-
-            // STOCK VALIDATION (Only for Sales)
+            var itemIds = req.Lines.Where(x => x.ItemId.HasValue).Select(l => l.ItemId!.Value).Distinct().ToList();
+            
+            // Stock Validation
             if (invType == InvoiceType.Sales)
             {
                 foreach (var line in req.Lines)
                 {
-                    if (line.ItemId.HasValue && decimal.TryParse(line.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty))
+                    if (line.ItemId.HasValue && decimal.TryParse(line.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty) && Math.Abs(qty) > 0)
                     {
-                        var absQty = Math.Abs(qty);
-                        if (absQty > 0)
-                        {
-                            await _stockService.ValidateStockAvailabilityAsync(line.ItemId.Value, absQty, ct);
-                        }
+                        await _stockService.ValidateStockAvailabilityAsync(line.ItemId.Value, Math.Abs(qty), ct);
                     }
                 }
             }
 
             itemsMap = await _db.Items
                .Where(i => itemIds.Contains(i.Id))
-               .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate })
+               .Select(i => new { i.Id, i.Code, i.Name, i.Unit, type = i.Type }) // Fetch Type too
                .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
         }
 
-        // 5) Invoice entity oluştur (toplamlar sıfır)
+        // 4) Initialize Invoice
         var invoice = new Invoice
         {
             BranchId = branchId,
@@ -103,108 +97,106 @@ public class CreateInvoiceHandler
             DateUtc = dateUtc,
             Currency = currency,
             Type = invType,
-            TotalNet = 0m,
-            TotalVat = 0m,
-            TotalGross = 0m,
+            WaybillNumber = req.WaybillNumber,
+            WaybillDateUtc = waybillDate,
+            PaymentDueDateUtc = dueDate,
             Lines = new List<InvoiceLine>()
         };
 
-        // 6) Satırlar
-        foreach (var line in req.Lines)
+        // 5) Process Lines
+        foreach (var lineDto in req.Lines)
         {
-            // Parse qty/unitPrice (string -> decimal)
-            if (!decimal.TryParse(line.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty))
-                throw new ArgumentException("Qty is invalid.");
+            // Parse Decimals
+            if (!decimal.TryParse(lineDto.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty)) throw new ArgumentException("Qty invalid");
+            if (!decimal.TryParse(lineDto.UnitPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var unitPrice)) throw new ArgumentException("Price invalid");
+            
+            decimal discountRate = 0;
+            if (!string.IsNullOrWhiteSpace(lineDto.DiscountRate))
+                decimal.TryParse(lineDto.DiscountRate, NumberStyles.Number, CultureInfo.InvariantCulture, out discountRate);
 
-            if (!decimal.TryParse(line.UnitPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var unitPrice))
-                throw new ArgumentException("UnitPrice is invalid.");
+            int withholdingRate = lineDto.WithholdingRate ?? 0;
 
-            // Kural: qty = 3 hane, unitPrice = 4 hane (AwayFromZero)
-            qty = Money.R3(qty);
+            // Normalize
+            qty = Money.R3(Math.Abs(qty)); // Always positive stored
             unitPrice = Money.R4(unitPrice);
+            
+            // -- CALCULATIONS --
+            // 1. Gross (Brüt) = Qty * Price
+            var gross = Money.R2(qty * unitPrice);
 
-            // DB'ye her zaman pozitif Qty kaydediyoruz
-            var absQty = Math.Abs(qty);
+            // 2. Discount Amount
+            var discountAmount = Money.R2(gross * discountRate / 100m);
 
-            // Net = qty * unitPrice (2 hane)
-            var net = Money.R2(unitPrice * absQty);
+            // 3. Net (Matrah)
+            var net = gross - discountAmount;
 
-            // Vat = net * rate/100 (2 hane)
-            var vat = Money.R2(net * line.VatRate / 100m);
+            // 4. VAT
+            var vatAmount = Money.R2(net * lineDto.VatRate / 100m);
 
-            // Gross = net + vat (2 hane)
-            var gross = Money.R2(net + vat);
+            // 5. Withholding
+            var withholdingAmount = Money.R2(vatAmount * withholdingRate / 100m);
 
+            // 6. Grand Total (Line) -> Net + Vat
+            var lineGrandTotal = net + vatAmount; 
+
+            // Create Entity
             var lineEntity = new InvoiceLine
             {
-                Qty = absQty, // DB: Positive per constraint
+                Qty = qty,
                 UnitPrice = unitPrice,
-                VatRate = line.VatRate,
-                Net = Money.R2(net),
-                Vat = Money.R2(vat),
-                Gross = Money.R2(gross),
+                VatRate = lineDto.VatRate,
+                Gross = gross,
+                DiscountRate = discountRate,
+                DiscountAmount = discountAmount,
+                Net = net,
+                Vat = vatAmount,
+                WithholdingRate = withholdingRate,
+                WithholdingAmount = withholdingAmount,
+                GrandTotal = lineGrandTotal
             };
 
+            // Map Details
             if (invType == InvoiceType.Expense)
             {
-                // Masraf Faturası: ItemId yasak, ExpenseDefinitionId zorunlu
-                if (line.ItemId.HasValue)
-                    throw new BusinessRuleException("Masraf faturasında stok kodu (ItemId) bulunamaz.");
-
-                if (!line.ExpenseDefinitionId.HasValue)
-                    throw new BusinessRuleException("Masraf faturasında masraf tanımı (ExpenseDefinitionId) zorunludur.");
-
-                if (expensesMap == null || !expensesMap.TryGetValue(line.ExpenseDefinitionId.Value, out var exp))
-                    throw new BusinessRuleException($"Masraf tanımı {line.ExpenseDefinitionId} bulunamadı.");
-
-                lineEntity.ExpenseDefinitionId = line.ExpenseDefinitionId;
-                lineEntity.ItemCode = exp.Code;
-                lineEntity.ItemName = exp.Name;
-                lineEntity.Unit = "adet";
+                 if (!lineDto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("ExpenseDefinitionId required");
+                 if (expensesMap == null || !expensesMap.TryGetValue(lineDto.ExpenseDefinitionId.Value, out var exp)) throw new BusinessRuleException("Expense not found");
+                 lineEntity.ExpenseDefinitionId = lineDto.ExpenseDefinitionId;
+                 lineEntity.ItemCode = exp.Code;
+                 lineEntity.ItemName = exp.Name;
+                 lineEntity.Unit = "adet";
             }
             else
             {
-                // Satış / Alış Faturası: ItemId zorunlu, ExpenseDefinitionId yasak
-                if (line.ExpenseDefinitionId.HasValue)
-                    throw new BusinessRuleException("Stok faturasında masraf tanımı (ExpenseDefinitionId) bulunamaz.");
-
-                if (!line.ItemId.HasValue)
-                    throw new BusinessRuleException("Stok faturasında ürün kodu (ItemId) zorunludur.");
-
-                if (itemsMap == null || !itemsMap.TryGetValue(line.ItemId.Value, out var it))
-                    throw new BusinessRuleException($"Item {line.ItemId} bulunamadı.");
-
-                lineEntity.ItemId = line.ItemId;
-                lineEntity.ItemCode = it.Code;
-                lineEntity.ItemName = it.Name;
-                lineEntity.Unit = it.Unit;
+                 if (!lineDto.ItemId.HasValue) throw new BusinessRuleException("ItemId required");
+                 if (itemsMap == null || !itemsMap.TryGetValue(lineDto.ItemId.Value, out var it)) throw new BusinessRuleException("Item not found");
+                 lineEntity.ItemId = lineDto.ItemId;
+                 lineEntity.ItemCode = it.Code;
+                 lineEntity.ItemName = it.Name;
+                 lineEntity.Unit = it.Unit;
             }
 
             invoice.Lines.Add(lineEntity);
 
+            // Add to Header Totals
+            invoice.TotalLineGross += lineEntity.Gross;
+            invoice.TotalDiscount += lineEntity.DiscountAmount;
             invoice.TotalNet += lineEntity.Net;
             invoice.TotalVat += lineEntity.Vat;
-            invoice.TotalGross += lineEntity.Gross;
+            invoice.TotalWithholding += lineEntity.WithholdingAmount;
         }
 
-        // Her ihtimale karşı toplamları da policy ile son kez kapat (2 hane)
-        invoice.TotalNet = Money.R2(invoice.TotalNet);
-        invoice.TotalVat = Money.R2(invoice.TotalVat);
-        invoice.TotalGross = Money.R2(invoice.TotalGross);
+        // Finalize Header
+        invoice.TotalGross = invoice.TotalNet + invoice.TotalVat; // Genel Toplam
+        // Balance (Kalan Ödenecek/Alacak) = Genel Toplam - Tevkifat (Tevkifatı devlet öder/biz öderiz)
+        invoice.Balance = invoice.TotalGross - invoice.TotalWithholding;
 
-        // Yeni fatura oluşturulurken balance = TotalGross (henüz ödeme yok)
-        invoice.Balance = invoice.TotalGross;
-
-        // Transaction: Invoice + StockMovements birlikte commit
+        // DB Save
         await using var tx = await _db.BeginTransactionAsync(ct);
         try
         {
             _db.Invoices.Add(invoice);
             await _db.SaveChangesAsync(ct);
-
-            // Stok Hareketlerini Oluştur
             await CreateStockMovements(invoice, ct);
-
             await tx.CommitAsync(ct);
         }
         catch
@@ -213,7 +205,6 @@ public class CreateInvoiceHandler
             throw;
         }
 
-        // 6) Sonuç (response’ta string)
         return new CreateInvoiceResult(
             Id: invoice.Id,
             TotalNet: Money.S2(invoice.TotalNet),

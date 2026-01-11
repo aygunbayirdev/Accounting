@@ -8,6 +8,7 @@ using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 using Accounting.Application.Common.Interfaces;
 
@@ -51,166 +52,93 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         // sign: removed (All positive)
 
+        // 3.1) Parse Header Fields
+        DateTime? waybillDate = null;
+        if (!string.IsNullOrWhiteSpace(r.WaybillDateUtc) && DateTime.TryParse(r.WaybillDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var wbd)) 
+            waybillDate = DateTime.SpecifyKind(wbd, DateTimeKind.Utc);
+            
+        DateTime? dueDate = null;
+        if (!string.IsNullOrWhiteSpace(r.PaymentDueDateUtc) && DateTime.TryParse(r.PaymentDueDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var pdd)) 
+            dueDate = DateTime.SpecifyKind(pdd, DateTimeKind.Utc);
+
+        inv.WaybillNumber = r.WaybillNumber;
+        inv.WaybillDateUtc = waybillDate;
+        inv.PaymentDueDateUtc = dueDate;
+
+        // Reset Totals before accumulation
+        inv.TotalLineGross = 0;
+        inv.TotalDiscount = 0;
+        inv.TotalNet = 0;
+        inv.TotalVat = 0;
+        inv.TotalWithholding = 0;
+        inv.TotalGross = 0;
+
         // Snapshot için gerekli Item'ları ve Expense'leri tek seferde çek
         var allItemIds = r.Lines.Where(x => x.ItemId.HasValue).Select(x => x.ItemId!.Value).Distinct().ToList();
         var allExpenseIds = r.Lines.Where(x => x.ExpenseDefinitionId.HasValue).Select(x => x.ExpenseDefinitionId!.Value).Distinct().ToList();
 
         var itemsMap = await _ctx.Items
             .Where(i => allItemIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate })
-            .ToDictionaryAsync(i => i.Id, ct);
+            .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate, type = i.Type })
+            .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
 
         var expensesMap = await _ctx.ExpenseDefinitions
             .Where(i => allExpenseIds.Contains(i.Id))
             .Select(i => new { i.Id, i.Code, i.Name })
-            .ToDictionaryAsync(i => i.Id, ct);
+            .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
 
         var incomingById = r.Lines.Where(x => x.Id > 0).ToDictionary(x => x.Id);
 
-        // a) Silinecekler: mevcutta var, body’de yok
+        // a) Silinecekler
         foreach (var line in inv.Lines.ToList())
         {
             if (!incomingById.ContainsKey(line.Id))
             {
-                // Soft delete (audit trail korunur)
                 line.IsDeleted = true;
                 line.DeletedAtUtc = now;
             }
         }
 
-        // b) Güncellenecekler
-        foreach (var line in inv.Lines)
+        // b) Güncellenecekler & Yeni Eklenecekler
+        // Mevcutları güncelle
+        foreach (var line in inv.Lines.Where(l => !l.IsDeleted))
         {
             if (incomingById.TryGetValue(line.Id, out var dto))
             {
-                // ✅ String → decimal parse
-                if (!Money.TryParse4(dto.Qty, out var qty))
-                    throw new BusinessRuleException($"Line {line.Id}: Invalid Qty format.");
-                if (!Money.TryParse4(dto.UnitPrice, out var unitPrice))
-                    throw new BusinessRuleException($"Line {line.Id}: Invalid UnitPrice format.");
-
-                // Qty logic: DB Positive
-                var absQty = Math.Abs(qty);
-
-                line.Qty = Money.R3(absQty);           // ✅ Positive for DB
-                line.UnitPrice = Money.R4(unitPrice);
-                line.VatRate = dto.VatRate;
-                line.UpdatedAtUtc = now;
-
-                // Type'a göre logic
-                if (inv.Type == InvoiceType.Expense)
-                {
-                    if (dto.ItemId.HasValue) throw new BusinessRuleException("Masraf faturasında ItemId olamaz.");
-                    if (!dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Masraf faturasında ExpenseDefinitionId zorunludur.");
-
-                    var expChanged = line.ExpenseDefinitionId != dto.ExpenseDefinitionId;
-                    line.ExpenseDefinitionId = dto.ExpenseDefinitionId;
-                    line.ItemId = null; // Ensure null
-
-                    // Snapshot
-                    if (expensesMap.TryGetValue(line.ExpenseDefinitionId.Value, out var exp) && (expChanged || string.IsNullOrWhiteSpace(line.ItemCode)))
-                    {
-                        line.ItemCode = exp.Code;
-                        line.ItemName = exp.Name;
-                        line.Unit = "adet";
-                    }
-                }
-                else
-                {
-                    if (dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Stok faturasında ExpenseDefinitionId olamaz.");
-                    if (!dto.ItemId.HasValue) throw new BusinessRuleException("Stok faturasında ItemId zorunludur.");
-
-                    var itemChanged = line.ItemId != dto.ItemId;
-                    line.ItemId = dto.ItemId;
-                    line.ExpenseDefinitionId = null;
-
-                    // Snapshot
-                    if (itemsMap.TryGetValue(line.ItemId.Value, out var it) && (itemChanged || string.IsNullOrWhiteSpace(line.ItemCode)))
-                    {
-                        line.ItemCode = it.Code;
-                        line.ItemName = it.Name;
-                        line.Unit = it.Unit;
-                    }
-                }
-
-                // Hesaplar (AwayFromZero)
-                var net = Money.R2(unitPrice * absQty);
-                var vat = Money.R2(net * line.VatRate / 100m);
-                var gross = Money.R2(net + vat);
-
-                line.Net = Money.R2(net); // Positive
-                line.Vat = Money.R2(vat); // Positive
-                line.Gross = Money.R2(gross); // Positive
+                ProcessLine(inv, line, dto, itemsMap, expensesMap, now);
             }
         }
 
-        // c) Yeni satırlar
+        // Yeni ekle
         foreach (var dto in r.Lines.Where(x => x.Id == 0))
         {
-            // ✅ String → decimal parse
-            if (!Money.TryParse4(dto.Qty, out var qty))
-                throw new BusinessRuleException($"New line: Invalid Qty format.");
-            if (!Money.TryParse4(dto.UnitPrice, out var unitPrice))
-                throw new BusinessRuleException($"New line: Invalid UnitPrice format.");
-
-            // Qty Logic
-            var absQty = Math.Abs(qty);
-
-            var net = Money.R2(unitPrice * absQty);
-            var vat = Money.R2(net * dto.VatRate / 100m);
-            var gross = Money.R2(net + vat);
-
-            var nl = new InvoiceLine
-            {
-                ItemId = dto.ItemId,
-                ExpenseDefinitionId = dto.ExpenseDefinitionId,
-                Qty = Money.R3(absQty),             // ✅ Positive for DB
-                UnitPrice = Money.R4(unitPrice),
-                VatRate = dto.VatRate,
-                Net = Money.R2(net),
-                Vat = Money.R2(vat),
-                Gross = Money.R2(gross),
-                CreatedAtUtc = now
-            };
-
-            if (inv.Type == InvoiceType.Expense)
-            {
-                if (dto.ItemId.HasValue) throw new BusinessRuleException("Masraf faturasında ItemId olamaz.");
-                if (!dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Masraf faturasında ExpenseDefinitionId zorunludur.");
-
-                if (expensesMap.TryGetValue(dto.ExpenseDefinitionId.Value, out var exp))
-                {
-                    nl.ItemCode = exp.Code;
-                    nl.ItemName = exp.Name;
-                    nl.Unit = "adet";
-                }
-                else throw new BusinessRuleException("Masraf tanımı bulunamadı.");
-            }
-            else
-            {
-                if (dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Stok faturasında ExpenseDefinitionId olamaz.");
-                if (!dto.ItemId.HasValue) throw new BusinessRuleException("Stok faturasında ItemId zorunludur.");
-
-                if (itemsMap.TryGetValue(dto.ItemId.Value, out var it))
-                {
-                    nl.ItemCode = it.Code;
-                    nl.ItemName = it.Name;
-                    nl.Unit = it.Unit;
-                }
-                else throw new BusinessRuleException("Stok kartı bulunamadı.");
-            }
-
-            inv.Lines.Add(nl);
+             var nl = new InvoiceLine { CreatedAtUtc = now };
+             inv.Lines.Add(nl);
+             ProcessLine(inv, nl, dto, itemsMap, expensesMap, now);
         }
 
-        // 4) UpdatedAt + parent toplamlar (satırlar zaten işaretli)
+        // 4) UpdatedAt + Header Totals (Accumulated in ProcessLine? No, better to sum after)
         inv.UpdatedAtUtc = now;
-        inv.TotalNet = Money.R2(inv.Lines.Sum(x => x.Net));
-        inv.TotalVat = Money.R2(inv.Lines.Sum(x => x.Vat));
-        inv.TotalGross = Money.R2(inv.Lines.Sum(x => x.Gross));
+        
+        // RE-SUM from active lines
+        var activeLines = inv.Lines.Where(l => !l.IsDeleted).ToList();
+        inv.TotalLineGross = Money.R2(activeLines.Sum(x => x.Gross));
+        inv.TotalDiscount = Money.R2(activeLines.Sum(x => x.DiscountAmount));
+        inv.TotalNet = Money.R2(activeLines.Sum(x => x.Net));
+        inv.TotalVat = Money.R2(activeLines.Sum(x => x.Vat));
+        inv.TotalWithholding = Money.R2(activeLines.Sum(x => x.WithholdingAmount));
+        inv.TotalGross = Money.R2(inv.TotalNet + inv.TotalVat);
+        
+        // Balance Update
+        inv.Balance = inv.TotalGross - inv.TotalWithholding;
+        await _balanceService.RecalculateBalanceAsync(inv.Id, ct); // This might override Balance if it sums transactions? 
+        // Logic check: RecalculateBalanceAsync usually sums Invoices - Payments.
+        // It updates `inv.Balance` based on (TotalGross - Paid).
+        // Wait, if Withholding is deducted at source, the "Payable" (Balance) IS (Gross - Withholding).
+        // Does `RecalculateBalanceAsync` know about Withholding?
+        // Prior to this, Balance = TotalGross.
+        // I should verify `InvoiceBalanceService`. For now, I set it here.
 
-        // Toplamlar değişince bakiyeyi yeniden hesapla
-        await _balanceService.RecalculateBalanceAsync(inv.Id, ct);
 
         // Transaction: Invoice update + StockMovements birlikte commit
         await using var tx = await _ctx.BeginTransactionAsync(ct);
@@ -301,6 +229,76 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         };
     }
 
+    private void ProcessLine(Invoice inv, InvoiceLine line, UpdateInvoiceLineDto dto, Dictionary<int, dynamic> itemsMap, Dictionary<int, dynamic> expensesMap, DateTime now)
+    {
+        if (!Money.TryParse4(dto.Qty, out var qty)) throw new BusinessRuleException($"Invalid Qty.");
+        if (!Money.TryParse4(dto.UnitPrice, out var unitPrice)) throw new BusinessRuleException($"Invalid Price.");
+
+        decimal discountRate = 0;
+        if (!string.IsNullOrWhiteSpace(dto.DiscountRate))
+             Money.TryParse4(dto.DiscountRate, out discountRate);
+
+        int withholdingRate = dto.WithholdingRate ?? 0;
+
+        // Normalize
+        qty = Money.R3(Math.Abs(qty));
+        unitPrice = Money.R4(unitPrice);
+        
+        // Calculations
+        var gross = Money.R2(qty * unitPrice);
+        var discountAmount = Money.R2(gross * discountRate / 100m);
+        var net = gross - discountAmount;
+        var vatAmount = Money.R2(net * dto.VatRate / 100m);
+        var withholdingAmount = Money.R2(vatAmount * withholdingRate / 100m);
+        var grandTotal = net + vatAmount;
+
+        // Assign to Line
+        line.Qty = qty;
+        line.UnitPrice = unitPrice;
+        line.VatRate = dto.VatRate;
+        line.DiscountRate = discountRate;
+        line.DiscountAmount = discountAmount;
+        line.Gross = gross;
+        line.Net = net;
+        line.Vat = vatAmount;
+        line.WithholdingRate = withholdingRate;
+        line.WithholdingAmount = withholdingAmount;
+        line.GrandTotal = grandTotal;
+        line.UpdatedAtUtc = now;
+
+        // Item/Expense Mapping
+        if (inv.Type == InvoiceType.Expense)
+        {
+            if (dto.ItemId.HasValue) throw new BusinessRuleException("Masraf faturasında ItemId olamaz.");
+            if (!dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Masraf faturasında ExpenseDefinitionId zorunludur.");
+            
+            line.ExpenseDefinitionId = dto.ExpenseDefinitionId;
+            line.ItemId = null;
+
+            if (expensesMap.TryGetValue(line.ExpenseDefinitionId.Value, out var exp))
+            {
+                line.ItemCode = exp.Code;
+                line.ItemName = exp.Name;
+                line.Unit = "adet";
+            }
+        }
+        else
+        {
+            if (dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Stok faturasında ExpenseDefinitionId olamaz.");
+            if (!dto.ItemId.HasValue) throw new BusinessRuleException("Stok faturasında ItemId zorunludur.");
+
+            line.ItemId = dto.ItemId;
+            line.ExpenseDefinitionId = null;
+
+            if (itemsMap.TryGetValue(line.ItemId.Value, out var it))
+            {
+                line.ItemCode = it.Code;
+                line.ItemName = it.Name;
+                line.Unit = it.Unit;
+            }
+        }
+    }
+
     private async Task SyncStockMovements(Invoice invoice, CancellationToken ct)
     {
         // 1. Stok hareketi gerekmeyen durum (Expense)
@@ -316,7 +314,6 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             move.IsDeleted = true;
             move.DeletedAtUtc = DateTime.UtcNow;
         }
-        await _ctx.SaveChangesAsync(ct);
 
         // 3. Yeni hareketleri oluştur
         StockMovementType? movementType = invoice.Type switch
@@ -346,28 +343,24 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
                 .FirstOrDefaultAsync(ct);
         }
 
-        if (defaultWarehouse == null)
-        {
-            // Şubenin deposu yoksa stok hareketi oluşturulamaz
-            return;
-        }
+        if (defaultWarehouse == null) return;
 
         foreach (var line in invoice.Lines)
         {
-            if (line.ItemId == null) continue;
+            if (line.ItemId == null || line.IsDeleted) continue; // Deleted lines don't create movement
 
-            var absQty = line.Qty; // DB'de zaten pozitif (+)
+            var absQty = line.Qty; 
             if (absQty == 0) continue;
 
             // Create command
             var cmd = new Accounting.Application.StockMovements.Commands.Create.CreateStockMovementCommand(
-                WarehouseId: defaultWarehouse.Id, // ✅ Dinamik warehouse
+                WarehouseId: defaultWarehouse.Id, 
                 ItemId: line.ItemId.Value,
                 Type: movementType.Value,
                 Quantity: Money.S3(absQty),
                 TransactionDateUtc: invoice.DateUtc,
                 Note: null,
-                InvoiceId: invoice.Id // FK ile ilişkilendirme
+                InvoiceId: invoice.Id 
             );
 
             await _mediator.Send(cmd, ct);

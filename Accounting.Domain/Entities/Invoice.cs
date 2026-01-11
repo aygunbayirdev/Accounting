@@ -13,11 +13,26 @@ public class Invoice : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranc
     public DateTime DateUtc { get; set; } = DateTime.UtcNow;
     public string InvoiceNumber { get; set; } = null!;
     public string Currency { get; set; } = "TRY";
+    public decimal CurrencyRate { get; set; } = 1.0m; // İşlem tarihindeki kur
 
-    public decimal TotalNet { get; set; }
-    public decimal TotalVat { get; set; }
-    public decimal TotalGross { get; set; }
-    public decimal Balance { get; set; }
+    // İrsaliye Bilgileri
+    public string? WaybillNumber { get; set; }
+    public DateTime? WaybillDateUtc { get; set; }
+
+    // Ödeme Vadesi
+    public DateTime? PaymentDueDateUtc { get; set; }
+
+    // Toplamlar
+    public decimal TotalLineGross { get; set; } // Satırların Brüt Toplamı (İskonto öncesi)
+    public decimal TotalDiscount { get; set; }  // Toplam İskonto
+    public decimal TotalNet { get; set; }       // Matrah (TotalLineGross - TotalDiscount)
+    public decimal TotalVat { get; set; }       // Toplam KDV
+    public decimal TotalWithholding { get; set; } // Toplam Tevkifat
+    public decimal TotalGross { get; set; }     // Genel Toplam (Vergiler Dahil, Tevkifat Düşülmemiş)
+    // NOT: Fatura Dip Toplamı = TotalGross
+    // Cari Alacağına işlenen = TotalGross - TotalWithholding
+    
+    public decimal Balance { get; set; }        // Kalan Bakiye
 
     public List<InvoiceLine> Lines { get; set; } = new();
 

@@ -193,14 +193,27 @@ public static IQueryable<T> ApplyBranchFilter<T>(
   - Perakende (`IsRetail`) ve Kurumsal (`IsCustomer`) aynı anda olamaz.
 
 ### 2. **Items (Ürün/Hizmetler)**
-- Stok ve hizmet yönetimi
-- **Özellikler**: CRUD, kod/isim validasyonu
+- **Stok ve Hizmet Yönetimi**:
+  - `Inventory` (Stoklu Ürün): Stok takibi yapılır, depoya girer/çıkar.
+  - `Service` (Hizmet): Stok takibi yapılmaz, sadece faturalanır (Danışmanlık, İşçilik vb.).
+- **Özellikler**: CRUD, kod/isim validasyonu, KDV oranı tanımı.
 
-### 3. **Invoices (Faturalar)**
-- **Tipler**: Sales (Satış), Purchase (Alış)
-- **İlişkiler**: Contact, InvoiceLines
-- **Hesaplamalar**: Net, KDV, Gross (backend'de yapılır)
-- **Özellikler**: Balance tracking, payment linking
+### 3. **Invoices (Faturalar) - KOBİ Standardı**
+- **Tipler**: 
+  - `Sales` (Satış): Müşteriye kesilen, stoktan düşen (ItemType=Inventory ise).
+  - `Purchase` (Alış): Tedarikçiden alınan, stoka giren.
+  - `SalesReturn` (Satış İade): Stok geri girer.
+  - `PurchaseReturn` (Alış İade): Stok geri çıkar.
+- **Kapsamlı Hesaplama**:
+  - **Matrah (Net)**: `(Miktar * Fiyat) - İskonto`
+  - **İskonto (Discount)**: Satır bazında oran (%) veya tutar.
+  - **KDV (VAT)**: Matrah üzerinden hesaplanan vergi.
+  - **Tevkifat (Withholding)**: KDV'nin belli oranının (örn. 5/10) alıcı tarafından ödenmesi.
+  - **Genel Toplam (Grand Total)**: `Fatura Toplamı - Tevkifat`.
+- **Ek Özellikler**: 
+  - **İrsaliye Takibi**: İrsaliye No ve Tarihi (`WaybillNumber`, `WaybillDateUtc`).
+  - **Vade Takibi**: Ödeme Vade Tarihi (`PaymentDueDateUtc`).
+  - **Dövizli Fatura**: Kur (`CurrencyRate`) ve Döviz Cinsi takibi.
 
 ### 4. **Payments (Tahsilat/Tediye)**
 - **Yönler**: In (Tahsilat), Out (Ödeme)

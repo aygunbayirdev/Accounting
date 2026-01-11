@@ -8,6 +8,9 @@ public sealed record UpdateInvoiceCommand(
     string Currency,
     int ContactId,
     string Type,
+    string? WaybillNumber,
+    string? WaybillDateUtc,
+    string? PaymentDueDateUtc,
     IReadOnlyList<UpdateInvoiceLineDto> Lines
 ) : IRequest<InvoiceDto>;
 
@@ -17,5 +20,7 @@ public sealed record UpdateInvoiceLineDto(
     int? ExpenseDefinitionId,
     string Qty,
     string UnitPrice,
-    int VatRate
+    int VatRate,
+    string? DiscountRate,
+    int? WithholdingRate
 );
