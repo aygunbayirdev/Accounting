@@ -215,6 +215,16 @@ public static IQueryable<T> ApplyBranchFilter<T>(
   - **Vade Takibi**: Ödeme Vade Tarihi (`PaymentDueDateUtc`).
   - **Dövizli Fatura**: Kur (`CurrencyRate`) ve Döviz Cinsi takibi.
 
+#### Tevkifat (Withholding) Nedir?
+KDV'nin bir kısmının satıcıya değil, doğrudan devlete ödenmesidir. Genellikle hizmet sektöründe (temizlik, nakliye, vb.) kullanılır.
+_Örnek: 1000 TL + %20 KDV (%5/10 Tevkifat)_
+- **Matrah**: 1000 TL
+- **KDV (%20)**: 200 TL
+- **Tevkifat (%50 - 5/10)**: 100 TL (KDV'nin yarısı)
+- **Fatura Toplamı**: 1200 TL
+- **Tahsil Edilecek (Ödenecek) Tutar**: 1100 TL (1200 - 100)
+> *Sistem bu hesabı girilen orana (örn. 50) göre otomatik yapar.*
+
 ### 4. **Payments (Tahsilat/Tediye)**
 - **Yönler**: In (Tahsilat), Out (Ödeme)
 - **İlişkiler**: CashBankAccount, Contact, Invoice
