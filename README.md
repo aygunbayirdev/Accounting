@@ -236,6 +236,18 @@ public static IQueryable<T> ApplyBranchFilter<T>(
 - **Roles**: Dinamik rol ve izin (Permission) yönetimi.
 - **Güvenlik**: JWT tabanlı, Branch-scoped erişim kontrolü.
 
+#### Varsayılan Roller (DataSeeder)
+Sistem **KOBİ** standartlarına uygun, otomatik oluşturulan hazır rollerle gelir:
+
+| Rol | Açıklama | Tipik Yetkiler | Örnek Kullanıcı (Şifre: ...123!) |
+|-----|----------|----------------|-----------------|
+| **Admin** | Sistem Yöneticisi | Sistemin **TAMAMINA** tam erişim. | `admin@demo.local` |
+| **Patron** | İşletme Sahibi | Tüm raporları ve kayıtları **görür ve onaylar**. Sistem ayarlarına dokunmaz. | `patron@demo.local` |
+| **MuhasebeSefi** | Mali Müşavir / Müdür | Tam finansal yetki (Fatura, Çek, Banka, Silme, İade). | `sef@demo.local` |
+| **OnMuhasebe** | Muhasebe Elemanı | Günlük veri girişi (Fatura, Cari, Sipariş). **Kayıt SİLEMEZ.** Kâr/Zarar görmez. | `muhasebe@demo.local` |
+| **DepoSorumlusu** | Depo Amiri | Sadece Stok, İrsaliye, Depo ve Ürünleri görür. Finansal verileri **GÖRMEZ**. | `depo@demo.local` |
+| **SatisTemsilcisi** | Plasiyer | Sipariş alır, Cari kart açar. Fatura kesme veya Tahsilat yetkisi kısıtlıdır. | `satis@demo.local` |
+
 ---
 
 ## 🔄 Optimistic Concurrency

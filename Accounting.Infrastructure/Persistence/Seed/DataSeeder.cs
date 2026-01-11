@@ -987,110 +987,112 @@ public static class DataSeeder
 
     private static async Task SeedRolesAsync(AppDbContext db, CancellationToken ct)
     {
-        if (await db.Roles.AnyAsync(ct)) return;
-
         var now = DateTime.UtcNow;
 
-        // Admin Role - Tüm yetkiler
-        var adminRole = new Role
+        // Helper to Create Role if not exists
+        async Task CreateRoleIfNotExists(string name, string desc, bool isStatic, string[] permissions)
         {
-            Name = "Admin",
-            Description = "Sistem Yöneticisi - Tüm yetkiler",
-            IsStatic = true,
-            CreatedAtUtc = now
-        };
+            if (await db.Roles.AnyAsync(r => r.Name == name, ct)) return;
 
-        // Admin gets all permissions
-        foreach (var permission in Permissions.GetAll())
-        {
-            adminRole.Permissions.Add(new RolePermission
+            var role = new Role
             {
-                Permission = permission,
+                Name = name,
+                Description = desc,
+                IsStatic = isStatic,
                 CreatedAtUtc = now
-            });
+            };
+
+            foreach (var p in permissions)
+            {
+                role.Permissions.Add(new RolePermission { Permission = p, CreatedAtUtc = now });
+            }
+
+            db.Roles.Add(role);
         }
 
-        db.Roles.Add(adminRole);
+        // 1. Admin (Sistem Yöneticisi) - Her yetkiye sahip
+        await CreateRoleIfNotExists("Admin", "Sistem Yöneticisi - Tam Yetki", true, Permissions.GetAll().ToArray());
 
-        // Manager Role - Okuma + Temel işlemler
-        var managerRole = new Role
+        // 2. Patron (İşletme Sahibi) - Her şeyi görür, onaylar, ama sistem ayarlarına dokunmaz (Genelde)
+        // KOBİ'de Patron genelde Admin gibidir ama biz ayrım yapalım. CompanySettings okuyup güncelleyebilir.
+        var patronPerms = Permissions.GetAll()
+            .Where(p => !p.StartsWith("User.") && !p.StartsWith("Role.")) // Kullanıcı yönetimi hariç (opsiyonel)
+            .Concat(new[] { Permissions.User.Read, Permissions.Role.Read }) // Sadece görüntülesin
+            .ToArray();
+        
+        // Patron'a Admin gibi full yetki de verebiliriz, talep "Patron" rolü olduğu için business odaklı full yapıyoruz.
+        await CreateRoleIfNotExists("Patron", "İşletme Sahibi - Tüm raporlar ve onaylar", false, patronPerms);
+
+        // 3. Muhasebe Şefi (Mali Müşavir / Muhasebe Müdürü)
+        // Finansal tüm işlemler, Raporlar, Onaylamalar. Silme yetkisi var.
+        var sefPerms = new[]
         {
-            Name = "Manager",
-            Description = "Şube Yöneticisi - Temel yetkiler",
-            IsStatic = true,
-            CreatedAtUtc = now
+            // Finans
+            Permissions.Invoice.Create, Permissions.Invoice.Read, Permissions.Invoice.Update, Permissions.Invoice.Delete,
+            Permissions.Payment.Create, Permissions.Payment.Read, Permissions.Payment.Update, Permissions.Payment.Delete,
+            Permissions.CashBankAccount.Create, Permissions.CashBankAccount.Read, Permissions.CashBankAccount.Update, Permissions.CashBankAccount.Delete,
+            Permissions.Cheque.Create, Permissions.Cheque.Read, Permissions.Cheque.Update, Permissions.Cheque.Delete, Permissions.Cheque.UpdateStatus,
+            // Masraf
+            Permissions.ExpenseList.Create, Permissions.ExpenseList.Read, Permissions.ExpenseList.Update, Permissions.ExpenseList.Delete, Permissions.ExpenseList.Review, Permissions.ExpenseList.PostToBill,
+            Permissions.ExpenseDefinition.Create, Permissions.ExpenseDefinition.Read, Permissions.ExpenseDefinition.Update, Permissions.ExpenseDefinition.Delete,
+            // Demirbaş
+            Permissions.FixedAsset.Create, Permissions.FixedAsset.Read, Permissions.FixedAsset.Update, Permissions.FixedAsset.Delete,
+            // Ticari
+            Permissions.Contact.Create, Permissions.Contact.Read, Permissions.Contact.Update, Permissions.Contact.Delete,
+            Permissions.Order.Create, Permissions.Order.Read, Permissions.Order.Update, Permissions.Order.Delete, Permissions.Order.Approve, Permissions.Order.CreateInvoice, Permissions.Order.Cancel,
+            Permissions.Item.Create, Permissions.Item.Read, Permissions.Item.Update, Permissions.Item.Delete,
+            Permissions.Category.Create, Permissions.Category.Read, Permissions.Category.Update, Permissions.Category.Delete,
+            Permissions.Branch.Read,
+            Permissions.Warehouse.Read,
+            // Rapor
+            Permissions.Report.Dashboard, Permissions.Report.ProfitLoss, Permissions.Report.ContactStatement, Permissions.Report.StockStatus,
+            // Ayar (Sadece okuma, belki vergi no vs güncelleme)
+            Permissions.CompanySettings.Read, Permissions.CompanySettings.Update
         };
+        await CreateRoleIfNotExists("MuhasebeSefi", "Muhasebe Şefi - Tam Finansal Yetki", false, sefPerms);
 
-        var managerPermissions = new[]
+        // 4. Ön Muhasebe (Veri Giriş Elemanı)
+        // Fatura/Cari/Sipariş girer. Silemez (Audit). Raporların detayını (Kar/Zarar) görmez.
+        var onMuhasebePerms = new[]
         {
-            Permissions.Invoice.Create, Permissions.Invoice.Read, Permissions.Invoice.Update,
+            Permissions.Invoice.Create, Permissions.Invoice.Read, Permissions.Invoice.Update, // Delete yok
             Permissions.Payment.Create, Permissions.Payment.Read, Permissions.Payment.Update,
             Permissions.Contact.Create, Permissions.Contact.Read, Permissions.Contact.Update,
+            Permissions.Order.Create, Permissions.Order.Read, Permissions.Order.Update, Permissions.Order.CreateInvoice, // Approve/Cancel genelde yetkili işidir
             Permissions.Item.Read,
-            Permissions.Order.Create, Permissions.Order.Read, Permissions.Order.Update, Permissions.Order.Approve,
-            Permissions.Stock.Read, Permissions.StockMovement.Read,
-            Permissions.Warehouse.Read,
-            Permissions.CashBankAccount.Read,
-            Permissions.Cheque.Create, Permissions.Cheque.Read, Permissions.Cheque.Update,
-            Permissions.ExpenseList.Create, Permissions.ExpenseList.Read, Permissions.ExpenseList.Update, Permissions.ExpenseList.Review,
-            Permissions.ExpenseDefinition.Create, Permissions.ExpenseDefinition.Read, Permissions.ExpenseDefinition.Update,
-            Permissions.FixedAsset.Create, Permissions.FixedAsset.Read, Permissions.FixedAsset.Update,
-            Permissions.Category.Read,
-            Permissions.Report.Dashboard, Permissions.Report.ProfitLoss, Permissions.Report.ContactStatement, Permissions.Report.StockStatus,
-            Permissions.CompanySettings.Read, Permissions.CompanySettings.Update,
-            Permissions.Branch.Read
-        };
-
-        foreach (var permission in managerPermissions)
-        {
-            managerRole.Permissions.Add(new RolePermission
-            {
-                Permission = permission,
-                CreatedAtUtc = now
-            });
-        }
-
-        db.Roles.Add(managerRole);
-
-        // User Role - Sadece okuma
-        var userRole = new Role
-        {
-            Name = "User",
-            Description = "Standart Kullanıcı - Sınırlı yetkiler",
-            IsStatic = false,
-            CreatedAtUtc = now
-        };
-
-        var userPermissions = new[]
-        {
-            Permissions.Invoice.Read,
-            Permissions.Payment.Read,
-            Permissions.Contact.Read,
-            Permissions.Item.Read,
-            Permissions.Order.Read,
+            Permissions.CashBankAccount.Read, // Bakiyeyi görür ama düzeltme yapamaz
+            Permissions.Cheque.Create, Permissions.Cheque.Read, Permissions.Cheque.Update, // Çek girişi yapar
+            Permissions.ExpenseList.Create, Permissions.ExpenseList.Read, Permissions.ExpenseList.Update,
             Permissions.Stock.Read,
             Permissions.Warehouse.Read,
-            Permissions.CashBankAccount.Read,
-            Permissions.Cheque.Read,
-            Permissions.ExpenseList.Read,
-            Permissions.ExpenseDefinition.Read,
-            Permissions.FixedAsset.Read,
             Permissions.Category.Read,
-            Permissions.Report.Dashboard,
-            Permissions.CompanySettings.Read,
-            Permissions.Branch.Read
+            Permissions.Report.Dashboard // Sadece özet
         };
+        await CreateRoleIfNotExists("OnMuhasebe", "Ön Muhasebe - Veri Girişi", false, onMuhasebePerms);
 
-        foreach (var permission in userPermissions)
+        // 5. Depo Sorumlusu
+        // Stok, İrsaliye, Depo. Finans görmez.
+        var depoPerms = new[]
         {
-            userRole.Permissions.Add(new RolePermission
-            {
-                Permission = permission,
-                CreatedAtUtc = now
-            });
-        }
+            Permissions.Stock.Read, Permissions.Stock.Transfer,
+            Permissions.StockMovement.Create, Permissions.StockMovement.Read,
+            Permissions.Item.Read, // Ürünleri görür
+            Permissions.Warehouse.Read, Permissions.Warehouse.Update,
+            Permissions.Order.Read, // Siparişleri görüp hazırlayabilir
+            Permissions.Report.StockStatus // Stok durum raporu
+        };
+        await CreateRoleIfNotExists("DepoSorumlusu", "Depo Sorumlusu - Stok Yönetimi", false, depoPerms);
 
-        db.Roles.Add(userRole);
+        // 6. Satış Temsilcisi
+        // Sipariş girer, Cari oluşturur. Fatura kesemez (Muhasebeye düşer), Tahsilat yapamaz (veya kısıtlı).
+        var satisPerms = new[]
+        {
+            Permissions.Order.Create, Permissions.Order.Read, Permissions.Order.Update,
+            Permissions.Contact.Create, Permissions.Contact.Read, Permissions.Contact.Update, // Müşteri yönetimi
+            Permissions.Item.Read, Permissions.Stock.Read, // Ürün ve stok durumu
+            Permissions.Report.StockStatus
+        };
+        await CreateRoleIfNotExists("SatisTemsilcisi", "Satış Temsilcisi - Sipariş ve Cari", false, satisPerms);
 
         await db.SaveChangesAsync(ct);
     }
@@ -1102,85 +1104,77 @@ public static class DataSeeder
         List<int> branchIds,
         CancellationToken ct)
     {
-        if (await db.Users.AnyAsync(ct)) return;
+        // Kullanıcılar var mı kontrolü (basitçe Admin varsa çıkalım, veya daha detaylı bakılabilir)
+        if (await db.Users.AnyAsync(u => u.Email == "admin@demo.local", ct)) return;
 
         var now = DateTime.UtcNow;
 
-        // Get roles
-        var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Admin", ct);
-        var managerRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Manager", ct);
-        var userRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "User", ct);
+        // Rolleri çek
+        var adminRole = await db.Roles.FirstAsync(r => r.Name == "Admin", ct);
+        var patronRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Patron", ct) ?? adminRole;
+        var sefRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "MuhasebeSefi", ct);
+        var onMuhasebeRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "OnMuhasebe", ct);
+        var depoRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "DepoSorumlusu", ct);
+        var satisRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "SatisTemsilcisi", ct);
 
-        if (adminRole == null || managerRole == null || userRole == null)
-            return;
+        // Eğer yeni roller henüz oluşmadıysa (eski DB), fallback yap
+        sefRole ??= adminRole;
+        onMuhasebeRole ??= adminRole;
+        depoRole ??= adminRole;
+        satisRole ??= adminRole;
 
         var users = new List<User>();
+        var userRoles = new List<UserRole>();
 
-        // 1. Admin User (Merkez)
-        var adminUser = new User
+        // Helper to add user
+        void AddUser(string email, string pass, string first, string last, Role role, int branchId)
         {
-            FirstName = "Admin",
-            LastName = "User",
-            Email = "admin@demo.local",
-            PasswordHash = passwordHasher.HashPassword("Admin123!"),
-            IsActive = true,
-            BranchId = headquartersBranchId,
-            CreatedAtUtc = now
-        };
-        users.Add(adminUser);
-
-        // 2. Manager User (Merkez)
-        var managerUser = new User
-        {
-            FirstName = "Merkez",
-            LastName = "Yönetici",
-            Email = "manager@demo.local",
-            PasswordHash = passwordHasher.HashPassword("Manager123!"),
-            IsActive = true,
-            BranchId = headquartersBranchId,
-            CreatedAtUtc = now
-        };
-        users.Add(managerUser);
-
-        // 3. Branch Users (Her şube için bir kullanıcı)
-        for (int i = 0; i < branchIds.Count; i++)
-        {
-            var branchId = branchIds[i];
-            var branchUser = new User
+            var u = new User
             {
-                FirstName = $"Şube{i + 1}",
-                LastName = "Kullanıcı",
-                Email = $"user{i + 1}@demo.local",
-                PasswordHash = passwordHasher.HashPassword("User123!"),
+                Email = email,
+                PasswordHash = passwordHasher.HashPassword(pass),
+                FirstName = first,
+                LastName = last,
                 IsActive = true,
                 BranchId = branchId,
                 CreatedAtUtc = now
             };
-            users.Add(branchUser);
+            users.Add(u);
+            
+            // id henüz yok, EF Core graph ile eklerken userRoles'u users'a ekleyebiliriz ama 
+            // toplu AddRange yapacaksak User nesnelerini önce ekleyip Id almalıyız veya navigation prop kullanmalıyız.
+            // Burada navigation prop üzerinden gidelim:
+            // u.UserRoles.Add(new UserRole { RoleId = role.Id, CreatedAtUtc = now }); <- UserRole entity constructor/nav prop izin vermeyebilir.
+            // Basitlik adına: User'ları ekle, SaveChanges, sonra Rolleri ekle.
         }
+
+        AddUser("admin@demo.local", "Admin123!", "Sistem", "Admin", adminRole, headquartersBranchId);
+        AddUser("patron@demo.local", "Patron123!", "Ali", "Patron", patronRole, headquartersBranchId);
+        AddUser("sef@demo.local", "Sef123!", "Ayşe", "Müdür", sefRole, headquartersBranchId); // Merkez
+        AddUser("muhasebe@demo.local", "Muhasebe123!", "Mehmet", "Hesap", onMuhasebeRole, branchIds.Last()); // Şube
+        AddUser("depo@demo.local", "Depo123!", "Veli", "Depocu", depoRole, headquartersBranchId);
+        AddUser("satis@demo.local", "Satis123!", "Selin", "Satıcı", satisRole, headquartersBranchId);
 
         db.Users.AddRange(users);
         await db.SaveChangesAsync(ct);
 
-        // Assign roles
-        var userRoleAssignments = new List<UserRole>
+        // Şimdi rolleri ata
+        foreach (var u in users)
         {
-            new() { UserId = adminUser.Id, RoleId = adminRole.Id, CreatedAtUtc = now },
-            new() { UserId = managerUser.Id, RoleId = managerRole.Id, CreatedAtUtc = now }
-        };
+            Role r = adminRole;
+            if (u.Email.StartsWith("patron")) r = patronRole;
+            else if (u.Email.StartsWith("sef")) r = sefRole;
+            else if (u.Email.StartsWith("muhasebe")) r = onMuhasebeRole;
+            else if (u.Email.StartsWith("depo")) r = depoRole;
+            else if (u.Email.StartsWith("satis")) r = satisRole;
 
-        // Branch users get User role
-        foreach (var user in users.Where(u => u.Email.StartsWith("user")))
-        {
-            userRoleAssignments.Add(new UserRole
+            db.Set<UserRole>().Add(new UserRole
             {
-                UserId = user.Id,
-                RoleId = userRole.Id,
+                UserId = u.Id,
+                RoleId = r.Id,
                 CreatedAtUtc = now
             });
         }
-
-        db.Set<UserRole>().AddRange(userRoleAssignments);
         await db.SaveChangesAsync(ct);
     }
 }
