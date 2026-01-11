@@ -354,7 +354,10 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
                 .FirstOrDefaultAsync(ct);
         }
 
-        if (defaultWarehouse == null) return;
+        if (defaultWarehouse == null)
+        {
+            throw new BusinessRuleException($"Şube (BranchId: {invoice.BranchId}) için tanımlı depo bulunamadı. Stoklu ürün içeren fatura için en az bir depo tanımlamalısınız.");
+        }
 
         foreach (var line in invoice.Lines)
         {

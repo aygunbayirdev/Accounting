@@ -183,4 +183,6 @@ public class FakeStockService : IStockService
         => Task.FromResult(new ItemStockDto(itemId, 0, 0, 0, 0));
     public Task ValidateStockAvailabilityAsync(int itemId, decimal quantityRequired, CancellationToken ct) 
         => Task.CompletedTask;
+    public Task ValidateBatchStockAvailabilityAsync(Dictionary<int, decimal> stockRequirements, CancellationToken ct) 
+        => Task.CompletedTask;
 }

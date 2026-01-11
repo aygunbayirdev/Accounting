@@ -73,4 +73,28 @@ public class StockService(IAppDbContext db) : IStockService
             throw new BusinessRuleException($"Stok yetersiz! İstenen: {quantityRequired}, Mevcut (Rezerve Dahil): {stock.QuantityAvailable}, Ürün ID: {itemId}");
         }
     }
+
+    public async Task ValidateBatchStockAvailabilityAsync(Dictionary<int, decimal> stockRequirements, CancellationToken ct)
+    {
+        if (stockRequirements == null || stockRequirements.Count == 0)
+            return;
+
+        var itemIds = stockRequirements.Keys.ToList();
+        var stocks = await GetStockStatusAsync(itemIds, ct);
+
+        var insufficientItems = new List<string>();
+
+        foreach (var stock in stocks)
+        {
+            if (stockRequirements.TryGetValue(stock.ItemId, out var required) && stock.QuantityAvailable < required)
+            {
+                insufficientItems.Add($"Ürün ID: {stock.ItemId}, İstenen: {required}, Mevcut: {stock.QuantityAvailable}");
+            }
+        }
+
+        if (insufficientItems.Any())
+        {
+            throw new BusinessRuleException($"Stok yetersiz! {string.Join("; ", insufficientItems)}");
+        }
+    }
 }

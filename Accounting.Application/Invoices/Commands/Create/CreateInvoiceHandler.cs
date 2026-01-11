@@ -18,13 +18,15 @@ public class CreateInvoiceHandler
     private readonly IMediator _mediator;
     private readonly IStockService _stockService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IInvoiceNumberService _invoiceNumberService;
 
-    public CreateInvoiceHandler(IAppDbContext db, IMediator mediator, IStockService stockService, ICurrentUserService currentUserService)
+    public CreateInvoiceHandler(IAppDbContext db, IMediator mediator, IStockService stockService, ICurrentUserService currentUserService, IInvoiceNumberService invoiceNumberService)
     {
         _db = db;
         _mediator = mediator;
         _stockService = stockService;
         _currentUserService = currentUserService;
+        _invoiceNumberService = invoiceNumberService;
     }
 
     public async Task<CreateInvoiceResult> Handle(CreateInvoiceCommand req, CancellationToken ct)
@@ -71,15 +73,20 @@ public class CreateInvoiceHandler
         {
             var itemIds = req.Lines.Where(x => x.ItemId.HasValue).Select(l => l.ItemId!.Value).Distinct().ToList();
             
-            // Stock Validation
+            // Stock Validation (Batch - Performance optimized)
             if (invType == InvoiceType.Sales)
             {
-                foreach (var line in req.Lines)
+                var stockRequirements = req.Lines
+                    .Where(l => l.ItemId.HasValue && decimal.TryParse(l.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+                    .GroupBy(l => l.ItemId!.Value)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(l => decimal.TryParse(l.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var q) ? Math.Abs(q) : 0m)
+                    );
+
+                if (stockRequirements.Any())
                 {
-                    if (line.ItemId.HasValue && decimal.TryParse(line.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty) && Math.Abs(qty) > 0)
-                    {
-                        await _stockService.ValidateStockAvailabilityAsync(line.ItemId.Value, Math.Abs(qty), ct);
-                    }
+                    await _stockService.ValidateBatchStockAvailabilityAsync(stockRequirements, ct);
                 }
             }
 
@@ -89,7 +96,11 @@ public class CreateInvoiceHandler
                .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
         }
 
-        // 4) Initialize Invoice
+        // 4) Generate Invoice Number
+        var invoiceNumberPrefix = Accounting.Application.Services.InvoiceNumberService.GetPrefix(invType);
+        var invoiceNumber = await _invoiceNumberService.GenerateNextAsync(branchId, invoiceNumberPrefix, ct);
+
+        // 5) Initialize Invoice
         var invoice = new Invoice
         {
             BranchId = branchId,
@@ -97,6 +108,7 @@ public class CreateInvoiceHandler
             DateUtc = dateUtc,
             Currency = currency,
             Type = invType,
+            InvoiceNumber = invoiceNumber,
             WaybillNumber = req.WaybillNumber,
             WaybillDateUtc = waybillDate,
             PaymentDueDateUtc = dueDate,
@@ -254,9 +266,8 @@ public class CreateInvoiceHandler
 
         if (defaultWarehouse == null)
         {
-            // Şubenin deposu yoksa stok hareketi oluşturulamaz
-            // Loglama yapılabilir veya BusinessRuleException fırlatılabilir
-            return;
+            // Şubenin deposu yoksa stoklu ürün faturalandırılamaz
+            throw new BusinessRuleException($"Şube (BranchId: {invoice.BranchId}) için tanımlı depo bulunamadı. Stoklu ürün içeren fatura oluşturmadan önce en az bir depo tanımlamalısınız.");
         }
 
         foreach (var line in invoice.Lines)

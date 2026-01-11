@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountBalanceService, AccountBalanceService>();
         services.AddScoped<IContactBalanceService, ContactBalanceService>();
         services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IInvoiceNumberService, InvoiceNumberService>();
         
         services.AddHttpContextAccessor();
 
