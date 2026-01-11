@@ -4,6 +4,9 @@ using Accounting.Application.CompanySettings.Queries.Get;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -18,6 +21,7 @@ public class CompanySettingsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.CompanySettings.Read)]
     public async Task<ActionResult<CompanySettingsDto>> Get()
     {
         var result = await _mediator.Send(new GetCompanySettingsQuery());
@@ -25,6 +29,7 @@ public class CompanySettingsController : ControllerBase
     }
 
     [HttpPut]
+    [Authorize(Policy = Permissions.CompanySettings.Update)]
     public async Task<ActionResult<CompanySettingsDto>> Update(UpdateCompanySettingsCommand command)
     {
         var result = await _mediator.Send(command);

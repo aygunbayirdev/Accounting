@@ -16,6 +16,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [Route("api/[controller]")]
@@ -26,6 +29,7 @@ public class InvoicesController : ControllerBase
     public InvoicesController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Invoice.Create)]
     [ProducesResponseType(typeof(CreateInvoiceResult), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CreateInvoiceResult>> Create([FromBody] CreateInvoiceCommand command, CancellationToken ct)
@@ -35,6 +39,7 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.Invoice.Read)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
     {
@@ -43,6 +48,7 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.Invoice.Read)]
     public async Task<ActionResult> List(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -68,6 +74,7 @@ public class InvoicesController : ControllerBase
 
     // DELETE /api/invoices/{id}
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Permissions.Invoice.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -80,6 +87,7 @@ public class InvoicesController : ControllerBase
 
     // TAM GÜNCELLEME
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.Invoice.Update)]
     [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -91,6 +99,7 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet("export")]
+    [Authorize(Policy = Permissions.Invoice.Read)] // Export requires read permission
     public async Task<IActionResult> Export(
         [FromServices] IExcelService excelService,
         [FromQuery] int? branchId,

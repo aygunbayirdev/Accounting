@@ -1,5 +1,8 @@
 ﻿using Accounting.Application.Common.Validation;
 using FluentValidation;
+using Accounting.Application.Payments.Commands.Update;
+
+namespace Accounting.Application.Payments.Commands.Update;
 
 public class UpdatePaymentValidator : AbstractValidator<UpdatePaymentCommand>
 {

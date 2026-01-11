@@ -8,6 +8,9 @@ using Accounting.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -18,6 +21,7 @@ public class CashBankAccountsController(IMediator mediator) : ControllerBase
 
     // GET /api/cashbankaccounts
     [HttpGet]
+    [Authorize(Policy = Permissions.CashBankAccount.Read)]
     [ProducesResponseType(typeof(PagedResult<CashBankAccountListItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult> List([FromQuery] ListCashBankAccountsQuery q, CancellationToken ct)
     {
@@ -27,6 +31,7 @@ public class CashBankAccountsController(IMediator mediator) : ControllerBase
 
     // GET /api/cashbankaccounts/{id}
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.CashBankAccount.Read)]
     [ProducesResponseType(typeof(CashBankAccountDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
@@ -37,6 +42,7 @@ public class CashBankAccountsController(IMediator mediator) : ControllerBase
 
     // POST /api/cashbankaccounts
     [HttpPost]
+    [Authorize(Policy = Permissions.CashBankAccount.Create)]
     [ProducesResponseType(typeof(CashBankAccountDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Create([FromBody] CreateCashBankAccountCommand cmd, CancellationToken ct)
@@ -47,6 +53,7 @@ public class CashBankAccountsController(IMediator mediator) : ControllerBase
 
     // PUT /api/cashbankaccounts/{id}
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.CashBankAccount.Update)]
     [ProducesResponseType(typeof(CashBankAccountDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Update([FromRoute] int id, [FromBody] UpdateCashBankAccountCommand cmd, CancellationToken ct)
@@ -58,6 +65,7 @@ public class CashBankAccountsController(IMediator mediator) : ControllerBase
 
     // DELETE /api/cashbankaccounts/{id}
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Permissions.CashBankAccount.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SoftDelete([FromRoute] int id, [FromBody] SoftDeleteCashBankAccountCommand cmd, CancellationToken ct)

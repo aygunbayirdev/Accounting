@@ -8,6 +8,9 @@ using Accounting.Application.FixedAssets.Queries.List;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -23,6 +26,7 @@ public sealed class FixedAssetsController : ControllerBase
 
     // GET api/FixedAssets
     [HttpGet]
+    [Authorize(Policy = Permissions.FixedAsset.Read)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<FixedAssetListItemDto>>> List(
         [FromQuery] ListFixedAssetsQuery query,
@@ -34,6 +38,7 @@ public sealed class FixedAssetsController : ControllerBase
 
     // GET api/FixedAssets/5
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.FixedAsset.Read)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FixedAssetDetailDto>> GetById(
@@ -48,6 +53,7 @@ public sealed class FixedAssetsController : ControllerBase
 
     // POST api/FixedAssets
     [HttpPost]            
+    [Authorize(Policy = Permissions.FixedAsset.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FixedAssetDetailDto>> Create(
@@ -63,6 +69,7 @@ public sealed class FixedAssetsController : ControllerBase
 
     // PUT api/FixedAssets/5  
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.FixedAsset.Update)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FixedAssetDetailDto>> Update(
@@ -79,6 +86,7 @@ public sealed class FixedAssetsController : ControllerBase
 
     // DELETE api/FixedAssets/5
     [HttpDelete("{id:int}")]   
+    [Authorize(Policy = Permissions.FixedAsset.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Delete(

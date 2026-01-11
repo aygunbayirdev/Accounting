@@ -8,6 +8,9 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers
 {
     [Route("api/[controller]")]
@@ -23,6 +26,7 @@ namespace Accounting.Api.Controllers
 
         // GET /api/branches
         [HttpGet]
+        [Authorize(Policy = Permissions.Branch.Read)]
         [ProducesResponseType(typeof(IReadOnlyList<BranchDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IReadOnlyList<BranchDto>>> List(CancellationToken ct)
         {
@@ -31,6 +35,7 @@ namespace Accounting.Api.Controllers
         }
         // GET /api/branches/{id}
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.Branch.Read)]
         [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BranchDto>> GetById(int id)
@@ -41,6 +46,7 @@ namespace Accounting.Api.Controllers
 
         // POST /api/branches
         [HttpPost]
+        [Authorize(Policy = Permissions.Branch.Create)]
         [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<BranchDto>> Create(CreateBranchCommand command)
@@ -51,6 +57,7 @@ namespace Accounting.Api.Controllers
 
         // PUT /api/branches/{id}
         [HttpPut("{id}")]
+        [Authorize(Policy = Permissions.Branch.Update)]
         [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,6 +71,7 @@ namespace Accounting.Api.Controllers
 
         // DELETE /api/branches/{id}
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.Branch.Delete)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id, [FromQuery] string rowVersion)

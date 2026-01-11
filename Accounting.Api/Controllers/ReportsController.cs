@@ -3,6 +3,9 @@ using Accounting.Application.Reports.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [Route("api/reports")]
@@ -10,12 +13,14 @@ namespace Accounting.Api.Controllers;
 public class ReportsController(IMediator mediator, IExcelService excelService) : ControllerBase
 {
     [HttpGet("dashboard")]
+    [Authorize(Policy = Permissions.Report.Dashboard)]
     public async Task<ActionResult<DashboardStatsDto>> GetDashboard([FromQuery] int branchId = 1, CancellationToken ct = default)
     {
         return Ok(await mediator.Send(new GetDashboardStatsQuery(branchId), ct));
     }
 
     [HttpGet("contact/{contactId}/statement")]
+    [Authorize(Policy = Permissions.Report.ContactStatement)]
     public async Task<ActionResult<ContactStatementDto>> GetContactStatement(
         int contactId,
         [FromQuery] DateTime? dateFrom,
@@ -26,12 +31,14 @@ public class ReportsController(IMediator mediator, IExcelService excelService) :
     }
 
     [HttpGet("stock-status")]
+    [Authorize(Policy = Permissions.Report.StockStatus)]
     public async Task<ActionResult<List<StockStatusDto>>> GetStockStatus(CancellationToken ct)
     {
         return Ok(await mediator.Send(new GetStockStatusQuery(), ct));
     }
 
     [HttpGet("stock-status/export")]
+    [Authorize(Policy = Permissions.Report.StockStatus)]
     public async Task<IActionResult> ExportStockStatus(CancellationToken ct)
     {
         var data = await mediator.Send(new GetStockStatusQuery(), ct);
@@ -40,6 +47,7 @@ public class ReportsController(IMediator mediator, IExcelService excelService) :
     }
 
     [HttpGet("contact/{id}/statement/export")]
+    [Authorize(Policy = Permissions.Report.ContactStatement)]
     public async Task<IActionResult> ExportContactStatement(
         int id,
         [FromQuery] DateTime? dateFrom,
@@ -54,6 +62,7 @@ public class ReportsController(IMediator mediator, IExcelService excelService) :
     }
 
     [HttpGet("profit-loss")]
+    [Authorize(Policy = Permissions.Report.ProfitLoss)]
     public async Task<ActionResult<ProfitLossDto>> GetProfitLoss(
         [FromQuery] int? branchId,
         [FromQuery] DateTime? dateFrom,

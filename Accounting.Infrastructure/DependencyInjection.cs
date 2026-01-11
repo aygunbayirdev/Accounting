@@ -35,6 +35,16 @@ public static class DependencyInjection
         services.AddSingleton<Accounting.Application.Common.Interfaces.IPasswordHasher, Accounting.Infrastructure.Authentication.PasswordHasher>();
         services.AddSingleton<Accounting.Application.Common.Interfaces.ICurrentUserService, Accounting.Infrastructure.Services.CurrentUserService>();
 
+        // Dynamic Policy Registration
+        services.AddAuthorization(options =>
+        {
+            foreach (var permission in Accounting.Domain.Constants.Permissions.GetAll())
+            {
+                options.AddPolicy(permission, policy => 
+                    policy.RequireClaim("permission", permission));
+            }
+        });
+
         return services;
     }
 }

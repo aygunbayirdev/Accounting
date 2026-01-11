@@ -7,6 +7,11 @@ using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+using Accounting.Application.Payments.Commands.Delete;
+using Accounting.Application.Payments.Commands.Update;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -17,6 +22,7 @@ public class PaymentsController : ControllerBase
     public PaymentsController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Payment.Create)]
     [ProducesResponseType(typeof(CreatePaymentResult), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CreatePaymentResult>> Create([FromBody] CreatePaymentCommand cmd, CancellationToken ct)
@@ -27,6 +33,7 @@ public class PaymentsController : ControllerBase
 
     // GET /api/payments/{id}
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.Payment.Read)]
     [ProducesResponseType(typeof(PaymentDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
@@ -36,6 +43,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.Payment.Read)]
     public async Task<ActionResult> List(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -62,6 +70,7 @@ public class PaymentsController : ControllerBase
 
     // PUT /api/payments/{id}
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.Payment.Update)]
     [ProducesResponseType(typeof(PaymentDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,6 +83,7 @@ public class PaymentsController : ControllerBase
 
     // DELETE /api/payments/{id}
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Permissions.Payment.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

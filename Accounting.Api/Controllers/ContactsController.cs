@@ -20,6 +20,7 @@ public class ContactsController : ControllerBase
     public ContactsController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Create)]
     [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Create([FromBody] CreateContactCommand body, CancellationToken ct)
@@ -29,6 +30,7 @@ public class ContactsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Read)]
     [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
@@ -38,6 +40,7 @@ public class ContactsController : ControllerBase
     }
 
     [HttpGet]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Read)]
     [ProducesResponseType(typeof(ContactListResult), StatusCodes.Status200OK)]
     public async Task<ActionResult> List([FromQuery] int? branchId, [FromQuery] string? search,
                                          [FromQuery] bool? isCustomer, [FromQuery] bool? isVendor, [FromQuery] bool? isEmployee, [FromQuery] bool? isRetail,
@@ -49,6 +52,7 @@ public class ContactsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Update)]
     [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -60,6 +64,7 @@ public class ContactsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

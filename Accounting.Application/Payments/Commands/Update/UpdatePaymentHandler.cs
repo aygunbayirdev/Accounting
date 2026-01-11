@@ -10,6 +10,9 @@ using Accounting.Application.Services;
 using Accounting.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Accounting.Application.Payments.Commands.Update;
+
+namespace Accounting.Application.Payments.Commands.Update;
 
 public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, PaymentDetailDto>
 {

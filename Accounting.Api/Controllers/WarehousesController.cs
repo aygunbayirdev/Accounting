@@ -9,6 +9,9 @@ using Accounting.Application.Warehouses.Queries.List;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -23,6 +26,7 @@ public sealed class WarehousesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.Warehouse.Read)]
     [ProducesResponseType(typeof(PagedResult<WarehouseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<WarehouseDto>>> List([FromQuery] ListWarehousesQuery q, CancellationToken ct)
     {
@@ -31,6 +35,7 @@ public sealed class WarehousesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.Warehouse.Read)]
     [ProducesResponseType(typeof(WarehouseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WarehouseDto>> GetById([FromRoute] int id, CancellationToken ct)
@@ -40,6 +45,7 @@ public sealed class WarehousesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Warehouse.Create)]
     [ProducesResponseType(typeof(WarehouseDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<WarehouseDto>> Create([FromBody] CreateWarehouseCommand cmd, CancellationToken ct)
     {
@@ -48,6 +54,7 @@ public sealed class WarehousesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.Warehouse.Update)]
     [ProducesResponseType(typeof(WarehouseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<WarehouseDto>> Update([FromRoute] int id, [FromBody] UpdateWarehouseCommand cmd, CancellationToken ct)
@@ -58,6 +65,7 @@ public sealed class WarehousesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Permissions.Warehouse.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SoftDelete([FromRoute] int id, [FromBody] RowVersionDto body, CancellationToken ct)
     {

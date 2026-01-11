@@ -7,11 +7,12 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")] // Only admins can manage users
 public class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -22,6 +23,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.User.Read)]
     public async Task<IActionResult> ListUsers([FromQuery] ListUsersQuery query)
     {
         var result = await _mediator.Send(query);
@@ -29,6 +31,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = Permissions.User.Read)]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _mediator.Send(new GetUserByIdQuery(id));
@@ -36,6 +39,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Permissions.User.Create)]
     public async Task<IActionResult> Create([FromBody] CreateUserCommand command)
     {
         var id = await _mediator.Send(command);
@@ -43,6 +47,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = Permissions.User.Update)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserCommand command)
     {
         if (id != command.Id)
@@ -53,6 +58,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = Permissions.User.Delete)]
     public async Task<IActionResult> Delete(int id)
     {
         await _mediator.Send(new SoftDeleteUserCommand(id));

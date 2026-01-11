@@ -6,6 +6,9 @@ using Accounting.Application.Services;
 using Accounting.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Accounting.Application.Payments.Commands.Delete;
+
+namespace Accounting.Application.Payments.Commands.Delete;
 
 public class SoftDeletePaymentHandler : IRequestHandler<SoftDeletePaymentCommand>
 {

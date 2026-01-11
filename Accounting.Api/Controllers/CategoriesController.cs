@@ -7,6 +7,9 @@ using Accounting.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [Route("api/categories")]
@@ -14,6 +17,7 @@ namespace Accounting.Api.Controllers;
 public class CategoriesController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Policy = Permissions.Category.Read)]
     public async Task<ActionResult<PagedResult<CategoryDto>>> GetList(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
@@ -24,12 +28,14 @@ public class CategoriesController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Category.Create)]
     public async Task<ActionResult<CategoryDto>> Create(CreateCategoryCommand command, CancellationToken ct)
     {
         return Ok(await mediator.Send(command, ct));
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = Permissions.Category.Update)]
     public async Task<ActionResult<CategoryDto>> Update(int id, UpdateCategoryCommand command, CancellationToken ct)
     {
         if (id != command.Id) return BadRequest("ID mismatch");
@@ -37,6 +43,7 @@ public class CategoriesController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = Permissions.Category.Delete)]
     public async Task<ActionResult<bool>> Delete(int id, [FromQuery] string rowVersion, CancellationToken ct)
     {
         return Ok(await mediator.Send(new DeleteCategoryCommand(id, rowVersion), ct));

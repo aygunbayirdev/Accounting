@@ -8,6 +8,9 @@ using Accounting.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
@@ -17,6 +20,7 @@ public class ItemsController(IMediator mediator) : ControllerBase
     private readonly IMediator _mediator = mediator;
 
     [HttpGet]
+    [Authorize(Policy = Permissions.Item.Read)]
     [ProducesResponseType(typeof(PagedResult<ItemListItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult> List([FromQuery] ListItemsQuery q, CancellationToken ct)
     {
@@ -25,6 +29,7 @@ public class ItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = Permissions.Item.Read)]
     [ProducesResponseType(typeof(ItemDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
@@ -34,6 +39,7 @@ public class ItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Item.Create)]
     [ProducesResponseType(typeof(ItemDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Create([FromBody] CreateItemCommand cmd, CancellationToken ct)
@@ -43,6 +49,7 @@ public class ItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = Permissions.Item.Update)]
     [ProducesResponseType(typeof(ItemDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Update([FromRoute] int id, [FromBody] UpdateItemCommand cmd, CancellationToken ct)
@@ -53,6 +60,7 @@ public class ItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Permissions.Item.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SoftDelete([FromRoute] int id, [FromBody] SoftDeleteItemCommand body, CancellationToken ct)

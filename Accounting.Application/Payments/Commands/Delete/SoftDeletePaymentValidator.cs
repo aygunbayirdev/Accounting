@@ -1,5 +1,8 @@
 ﻿using Accounting.Application.Common.Validation;
 using FluentValidation;
+using Accounting.Application.Payments.Commands.Delete;
+
+namespace Accounting.Application.Payments.Commands.Delete;
 
 public class SoftDeletePaymentValidator : AbstractValidator<SoftDeletePaymentCommand>
 {

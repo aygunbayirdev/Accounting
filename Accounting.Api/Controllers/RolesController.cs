@@ -7,11 +7,12 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
 public class RolesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -22,6 +23,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = Permissions.Role.Read)]
     public async Task<IActionResult> ListRoles()
     {
         var result = await _mediator.Send(new ListRolesQuery());
@@ -29,6 +31,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = Permissions.Role.Read)]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _mediator.Send(new GetRoleByIdQuery(id));
@@ -36,6 +39,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = Permissions.Role.Create)]
     public async Task<IActionResult> Create([FromBody] CreateRoleCommand command)
     {
         var id = await _mediator.Send(command);
@@ -43,6 +47,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = Permissions.Role.Update)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRoleCommand command)
     {
         if (id != command.Id)
@@ -53,6 +58,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = Permissions.Role.Delete)]
     public async Task<IActionResult> Delete(int id)
     {
         await _mediator.Send(new DeleteRoleCommand(id));

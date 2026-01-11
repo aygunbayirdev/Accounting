@@ -83,6 +83,13 @@ This document defines the coding standards, architectural patterns, and best pra
   - Direction (Refund/Return) is determined by `InvoiceType`, NOT by the sign of the value.
 - **Stock Movement**: Linked to Invoices, but managed via Domain Events or Service orchestration (ensure consistency).
 
+## 8. Authorization Policy 🛡️
+- **Mechanism**: Dynamic Policy Authorization based on Permissions.
+- **Rule**: All Controllers/Endpoints (except Auth/Public) **MUST** use `[Authorize(Policy = Permissions.Module.Action)]`.
+- **Naming Convention**: `Permissions.Domain.Action` (e.g., `Permissions.Invoice.Create`).
+- **Implementation**: Policies are dynamically registered in `DependencyInjection.cs` from `Permissions.GetAll()`.
+- **Do NOT** use Role-based auth (`Roles="Admin"`) directly in controllers. Use Permissions to abstract roles.
+
 ## 7. Migration & Database
 - **Schema**: Use `SnakeCase` naming for tables/columns (or preserve existing convention if Pascal).
 - **UTC**: All `DateTime` fields must be UTC (`DateTime.UtcNow`). suffix `AtUtc` (e.g., `CreatedAtUtc`).

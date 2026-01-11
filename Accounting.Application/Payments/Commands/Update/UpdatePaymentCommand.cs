@@ -1,3 +1,5 @@
+namespace Accounting.Application.Payments.Commands.Update;
+
 using Accounting.Application.Payments.Queries.Dto;
 using Accounting.Domain.Enums;
 using MediatR;

@@ -9,6 +9,9 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+using Accounting.Domain.Constants;
+
 namespace Accounting.Api.Controllers
 {
     [Route("api/[controller]")]
@@ -24,6 +27,7 @@ namespace Accounting.Api.Controllers
 
         // GET api/ExpenseDefinitions
         [HttpGet]
+        [Authorize(Policy = Permissions.ExpenseDefinition.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResult<ExpenseDefinitionListItemDto>>> List(
             [FromQuery] ListExpenseDefinitionsQuery query,
@@ -35,6 +39,7 @@ namespace Accounting.Api.Controllers
 
         // GET api/ExpenseDefinitions/5
         [HttpGet("{id:int}")]
+        [Authorize(Policy = Permissions.ExpenseDefinition.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ExpenseDefinitionDetailDto>> GetById(
@@ -49,6 +54,7 @@ namespace Accounting.Api.Controllers
 
         // POST api/ExpenseDefinitions
         [HttpPost]
+        [Authorize(Policy = Permissions.ExpenseDefinition.Create)]
         public async Task<IActionResult> Create([FromBody] CreateExpenseDefinitionCommand command, CancellationToken ct)
         {
             var id = await _mediator.Send(command, ct);
@@ -57,6 +63,7 @@ namespace Accounting.Api.Controllers
 
         // PUT api/ExpenseDefinitions/5
         [HttpPut("{id}")]
+        [Authorize(Policy = Permissions.ExpenseDefinition.Update)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateExpenseDefinitionCommand command, CancellationToken ct)
         {
             if (id != command.Id)
@@ -68,6 +75,7 @@ namespace Accounting.Api.Controllers
 
         // DELETE api/ExpenseDefinitions/5
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.ExpenseDefinition.Delete)]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
             await _mediator.Send(new SoftDeleteExpenseDefinitionCommand(id), ct);
