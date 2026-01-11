@@ -45,9 +45,14 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
                 Money.S3(l.Qty),
                 Money.S4(l.UnitPrice),
                 l.VatRate,
+                Money.S2(l.DiscountRate),   // Added
+                Money.S2(l.DiscountAmount), // Added
                 Money.S2(l.Net),
                 Money.S2(l.Vat),
-                Money.S2(l.Gross)
+                l.WithholdingRate,          // Added
+                Money.S2(l.WithholdingAmount), // Added
+                Money.S2(l.Gross),
+                Money.S2(l.GrandTotal)      // Added
             ))
             .ToList();
 

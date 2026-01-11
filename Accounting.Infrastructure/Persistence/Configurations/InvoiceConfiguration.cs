@@ -13,7 +13,10 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         b.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired();
         b.Property(x => x.Type).HasConversion<int>().IsRequired();
         b.Property(x => x.Currency).IsRequired().HasMaxLength(3).IsUnicode(false);
+        b.Property(x => x.CurrencyRate).HasColumnType("decimal(18,4)"); // Opus Review
         b.Property(x => x.DateUtc).IsRequired();
+
+        b.Property(x => x.WaybillNumber).HasMaxLength(50); // Opus Review
 
         b.Property(x => x.TotalNet).HasColumnType("decimal(18,2)");
         b.Property(x => x.TotalVat).HasColumnType("decimal(18,2)");

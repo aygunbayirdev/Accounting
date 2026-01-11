@@ -10,9 +10,14 @@ public record InvoiceLineDto(
     string Qty,        // F3
     string UnitPrice,  // F4
     int VatRate,
+    string DiscountRate, // F2 (Added)
+    string DiscountAmount, // F2 (Added)
     string Net,        // F2
     string Vat,        // F2
-    string Gross       // F2
+    int WithholdingRate, // (Added)
+    string WithholdingAmount, // F2 (Added)
+    string Gross,       // F2
+    string GrandTotal   // F2 (Added)
 );
 
 public record InvoiceDto(

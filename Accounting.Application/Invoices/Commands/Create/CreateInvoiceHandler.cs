@@ -196,7 +196,7 @@ public class CreateInvoiceHandler
         {
             _db.Invoices.Add(invoice);
             await _db.SaveChangesAsync(ct);
-            await CreateStockMovements(invoice, ct);
+            await CreateStockMovements(invoice, itemsMap, ct);
             await tx.CommitAsync(ct);
         }
         catch
@@ -214,7 +214,7 @@ public class CreateInvoiceHandler
         );
     }
 
-    private async Task CreateStockMovements(Invoice invoice, CancellationToken ct)
+    private async Task CreateStockMovements(Invoice invoice, Dictionary<int, dynamic>? itemsMap, CancellationToken ct)
     {
         // Fatura tipine göre Stok hareket yönünü belirle
         // Sales -> SalesOut (Çıkış)
@@ -263,6 +263,13 @@ public class CreateInvoiceHandler
         {
             // Eğer yanlışlıkla satıra Item koyulmadıysa devam et (Validasyon zaten var ama defensive coding)
             if (line.ItemId == null) continue;
+
+            // Check ItemType - Skip if NOT Inventory
+            if (itemsMap != null && itemsMap.TryGetValue(line.ItemId.Value, out var it))
+            {
+                 if ((ItemType)it.type != ItemType.Inventory) continue;
+            }
+
             // Qty işareti: InvoiceLine.Qty'de iadelerde negatif tutuyorduk (finansal).
             // Stok servisi "mutlak değer" bekliyor olabilir, ama CreateStockMovementHandler:
             // "IsIn" ise +qty, değilse -qty yapıyor.
