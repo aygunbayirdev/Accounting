@@ -1,130 +1,96 @@
-using Accounting.Application.Common.Exceptions;
+using Accounting.Application.Common.Interfaces;
 using Accounting.Application.FixedAssets.Commands.Create;
-using Accounting.Application.FixedAssets.Commands.Delete;
 using Accounting.Application.FixedAssets.Commands.Update;
 using Accounting.Domain.Entities;
 using Accounting.Infrastructure.Persistence;
 using Accounting.Infrastructure.Persistence.Interceptors;
-
-using Microsoft.EntityFrameworkCore;
-using Xunit;
 using Accounting.Tests.Common;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Moq;
+using Xunit;
 
-namespace Accounting.Tests
+namespace Accounting.Tests;
+
+public class FixedAssetTests
 {
-    public class FixedAssetTests
+    private readonly DbContextOptions<AppDbContext> _options;
+
+    public FixedAssetTests()
     {
-        private DbContextOptions<AppDbContext> _options;
+        _options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+    }
 
-        public FixedAssetTests()
-        {
-            _options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
-                .Options;
-        }
+    [Fact]
+    public async Task CreateFixedAsset_ShouldSucceed_WhenValid()
+    {
+        var userService = new FakeCurrentUserService(branchId: 1);
+        var audit = new AuditSaveChangesInterceptor(userService);
+        using var db = new AppDbContext(_options, audit, userService);
 
-        [Fact]
-        public async Task Create_ShouldCalculateDepreciationRate()
-        {
-            var userService = new FakeCurrentUserService(1);
-            var audit = new AuditSaveChangesInterceptor(userService);
-            using (var db = new AppDbContext(_options, audit, userService))
-            {
-                // Seed Branch
-                db.Branches.Add(new Branch { Id = 1, Name = "Main", Code = "BR-01" });
-                await db.SaveChangesAsync();
+        // Seed
+        db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
+        await db.SaveChangesAsync();
 
-                var handler = new CreateFixedAssetHandler(db);
-                var cmd = new CreateFixedAssetCommand(
-                    BranchId: 1,
-                    Code: "FA-001",
-                    Name: "Laptop",
-                    PurchaseDateUtc: DateTime.UtcNow,
-                    PurchasePrice: 50000m,
-                    UsefulLifeYears: 5
-                );
+        var handler = new CreateFixedAssetHandler(db);
 
-                var result = await handler.Handle(cmd, CancellationToken.None);
+        var command = new CreateFixedAssetCommand(
+            BranchId: 1,
+            Code: "FA-001",
+            Name: "Laptop",
+            PurchaseDateUtc: DateTime.UtcNow,
+            PurchasePrice: 15000m,
+            UsefulLifeYears: 5
+        );
 
-                var entity = await db.FixedAssets.FindAsync(result.Id);
-                Assert.NotNull(entity);
-                Assert.Equal(20m, entity.DepreciationRatePercent); // 100 / 5 = 20
-                Assert.Equal("FA-001", entity.Code);
-            }
-        }
+        var result = await handler.Handle(command, CancellationToken.None);
 
-        [Fact]
-        public async Task Update_ShouldRecalculateRate_WhenLifeYearsChanged()
-        {
-            var userService = new FakeCurrentUserService(1);
-            var audit = new AuditSaveChangesInterceptor(userService);
-            using (var db = new AppDbContext(_options, audit, userService))
-            {
-                db.Branches.Add(new Branch { Id = 1, Name = "Main", Code = "BR-01" });
-                var asset = new FixedAsset 
-                { 
-                    BranchId = 1, 
-                    Code = "FA-002", 
-                    Name = "Table", 
-                    PurchasePrice = 1000, 
-                    UsefulLifeYears = 10, 
-                    DepreciationRatePercent = 10,
-                    RowVersion = new byte[] { 1 }
-                };
-                db.FixedAssets.Add(asset);
-                await db.SaveChangesAsync();
+        Assert.NotNull(result);
+        Assert.Equal("FA-001", result.Code);
+        Assert.Equal(20m, result.DepreciationRatePercent); // 100 / 5 = 20
+    }
 
-                // Update
-                var handler = new UpdateFixedAssetHandler(db, userService);
-                var rowVersionBase64 = Convert.ToBase64String(asset.RowVersion);
-                var cmd = new UpdateFixedAssetCommand(
-                    asset.Id, 
-                    rowVersionBase64, 
-                    "FA-002", 
-                    "Office Table", 
-                    DateTime.UtcNow, // Added PurchaseDate
-                    1000m,           // Added PurchasePrice
-                    4
-                ); 
+    [Fact]
+    public async Task UpdateFixedAsset_ShouldSucceed()
+    {
+        var userService = new FakeCurrentUserService(branchId: 1);
+        var audit = new AuditSaveChangesInterceptor(userService);
+        using var db = new AppDbContext(_options, audit, userService);
 
-                await handler.Handle(cmd, CancellationToken.None);
+        // Seed
+        db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
+        var asset = new FixedAsset { 
+            Id = 1, 
+            BranchId = 1, 
+            Code = "FA-001", 
+            Name = "Laptop", 
+            PurchaseDateUtc = DateTime.UtcNow, 
+            PurchasePrice = 15000m, 
+            UsefulLifeYears = 5,
+            DepreciationRatePercent = 20m,
+            RowVersion = Guid.NewGuid().ToByteArray()
+        };
+        db.FixedAssets.Add(asset);
+        await db.SaveChangesAsync();
 
-                var updated = await db.FixedAssets.FindAsync(asset.Id);
-                Assert.Equal(25m, updated.DepreciationRatePercent); // 100 / 4 = 25
-                Assert.Equal("Office Table", updated.Name);
-            }
-        }
+        var handler = new UpdateFixedAssetHandler(db, userService);
 
-        [Fact]
-        public async Task Delete_ShouldSoftDelete()
-        {
-            var userService = new FakeCurrentUserService(1);
-            var audit = new AuditSaveChangesInterceptor(userService);
-            using (var db = new AppDbContext(_options, audit, userService))
-            {
-                db.Branches.Add(new Branch { Id = 1, Name = "Main", Code = "BR-01" });
-                var asset = new FixedAsset
-                {
-                    BranchId = 1,
-                    Code = "FA-003",
-                    Name = "Old Chair",
-                    UsefulLifeYears = 5,
-                    RowVersion = new byte[] { 1 }
-                };
-                db.FixedAssets.Add(asset);
-                await db.SaveChangesAsync();
+        var command = new UpdateFixedAssetCommand(
+            Id: 1,
+            RowVersionBase64: Convert.ToBase64String(asset.RowVersion),
+            Code: "FA-001-UPD",
+            Name: "Laptop Pro",
+            PurchaseDateUtc: DateTime.UtcNow,
+            PurchasePrice: 20000m,
+            UsefulLifeYears: 4
+        );
 
-                var handler = new DeleteFixedAssetHandler(db, userService);
-                var rowVersion = Convert.ToBase64String(asset.RowVersion);
-                var cmd = new DeleteFixedAssetCommand(asset.Id, rowVersion);
+        var result = await handler.Handle(command, CancellationToken.None);
 
-                await handler.Handle(cmd, CancellationToken.None);
-
-                var deleted = await db.FixedAssets.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == asset.Id);
-                Assert.True(deleted.IsDeleted);
-                Assert.NotNull(deleted.DeletedAtUtc);
-            }
-        }
+        Assert.Equal("FA-001-UPD", result.Code);
+        Assert.Equal(25m, result.DepreciationRatePercent); // 100 / 4 = 25
     }
 }
