@@ -25,7 +25,7 @@ public class ExpenseLine : IHasTimestamps, ISoftDeletable, IHasRowVersion
     public DateTime? UpdatedAtUtc { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAtUtc { get; set; }
-    public byte[] RowVersion { get; set; } = null!;
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // navigations
     public ExpenseList ExpenseList { get; set; } = null!;
