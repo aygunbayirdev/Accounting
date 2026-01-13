@@ -79,7 +79,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         var itemsMap = await _ctx.Items
             .Where(i => allItemIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate, type = i.Type })
+            .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate, type = i.Type, i.DefaultWithholdingRate })
             .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
 
         var expensesMap = await _ctx.ExpenseDefinitions

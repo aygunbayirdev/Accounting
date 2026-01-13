@@ -92,7 +92,7 @@ public class CreateInvoiceHandler
 
             itemsMap = await _db.Items
                .Where(i => itemIds.Contains(i.Id))
-               .Select(i => new { i.Id, i.Code, i.Name, i.Unit, type = i.Type }) // Fetch Type too
+               .Select(i => new { i.Id, i.Code, i.Name, i.Unit, type = i.Type, i.DefaultWithholdingRate })
                .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
         }
 

@@ -77,6 +77,21 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 }
             }
 
+            // 4. Normalize Empty Strings to Null for Nullable Varchar Columns
+            if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+            {
+                foreach (var prop in entry.Properties)
+                {
+                    if (prop.Metadata.ClrType == typeof(string) 
+                        && prop.Metadata.IsNullable 
+                        && prop.CurrentValue is string s 
+                        && string.IsNullOrWhiteSpace(s))
+                    {
+                        prop.CurrentValue = null;
+                    }
+                }
+            }
+
             // 3. Audit Logging
             // Re-evaluate state because Soft Delete might have changed Deleted -> Modified
             var auditEntry = CreateAuditEntry(entry, userId, now);

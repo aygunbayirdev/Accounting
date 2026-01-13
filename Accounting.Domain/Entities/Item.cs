@@ -13,6 +13,7 @@ public class Item : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranch
     public ItemType Type { get; set; } = ItemType.Inventory;
     public string Unit { get; set; } = "adet";
     public int VatRate { get; set; } = 20;
+    public int? DefaultWithholdingRate { get; set; } // Varsayılan Tevkifat Oranı (%) - Nullable
     public decimal? PurchasePrice { get; set; } // Alış Fiyatı (Maliyet)
     public decimal? SalesPrice { get; set; }    // Satış Fiyatı (Liste Fiyatı)
 
