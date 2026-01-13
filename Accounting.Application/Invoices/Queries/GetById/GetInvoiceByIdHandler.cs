@@ -62,6 +62,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             inv.Contact.Code,
             inv.Contact.Name,
             inv.DateUtc,
+            inv.InvoiceNumber,
             inv.Currency,
             Money.S2(inv.TotalLineGross),
             Money.S2(inv.TotalDiscount),

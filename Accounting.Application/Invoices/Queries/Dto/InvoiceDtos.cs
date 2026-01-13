@@ -26,6 +26,7 @@ public record InvoiceDto(
     string ContactCode,
     string ContactName,
     DateTime DateUtc,        // Belge tarihi (iş mantığı)
+    string InvoiceNumber,    // Added
     string Currency,
     string TotalLineGross,   // F2 (Added)
     string TotalDiscount,    // F2 (Added)

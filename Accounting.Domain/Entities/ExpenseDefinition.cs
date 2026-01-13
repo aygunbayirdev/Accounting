@@ -20,7 +20,7 @@ public class ExpenseDefinition : IHasTimestamps, ISoftDeletable, IHasRowVersion,
     public DateTime? DeletedAtUtc { get; set; }
 
     // Concurrency
-    public byte[] RowVersion { get; set; } = null!;
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigation
     public Branch Branch { get; set; } = null!;

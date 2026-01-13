@@ -1,5 +1,6 @@
 ﻿using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Utils;
+using Accounting.Application.Common.Exceptions;
 using Accounting.Application.Items.Queries.Dto;
 using Accounting.Domain.Entities;
 using MediatR;
@@ -36,6 +37,10 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
         }
 
         var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException();
+
+        // Check for duplicate code
+        var exists = await _db.Items.AnyAsync(x => x.BranchId == branchId && x.Code == r.Code.Trim(), ct);
+        if (exists) throw new BusinessRuleException($"Bu kod ({r.Code}) ile kayıtlı stok/hizmet zaten var.");
 
         var e = new Item
         {

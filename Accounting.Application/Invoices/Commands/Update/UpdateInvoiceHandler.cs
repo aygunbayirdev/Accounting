@@ -199,6 +199,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             fresh.Contact?.Code ?? "",
             fresh.Contact?.Name ?? "",
             fresh.DateUtc,
+            fresh.InvoiceNumber,
             fresh.Currency,
             Money.S2(fresh.TotalLineGross), // Added
             Money.S2(fresh.TotalDiscount),  // Added
