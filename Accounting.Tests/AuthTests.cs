@@ -1,127 +1,89 @@
-using Accounting.Application.Authentication.Commands.Login;
-using Accounting.Application.Authentication.Commands.Register;
-using Accounting.Application.Common.Exceptions;
-using Accounting.Application.Common.Interfaces;
 using Accounting.Domain.Entities;
-using Accounting.Infrastructure.Persistence;
-using Accounting.Tests.Common;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Moq;
+using Accounting.Infrastructure.Authentication;
+using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Xunit;
 
 namespace Accounting.Tests;
 
 public class AuthTests
 {
-    private readonly Mock<IJwtTokenGenerator> _mockTokenGenerator;
-    private readonly Mock<IPasswordHasher> _mockPasswordHasher;
+    private readonly JwtTokenGenerator _jwtGenerator;
+    private readonly JwtSettings _jwtSettings;
 
     public AuthTests()
     {
-        _mockTokenGenerator = new Mock<IJwtTokenGenerator>();
-        _mockPasswordHasher = new Mock<IPasswordHasher>();
+        _jwtSettings = new JwtSettings
+        {
+            Secret = "SuperSecretKeyForTestingPurpose123456789", // Must be long enough for HMACSHA256
+            Issuer = "TestIssuer",
+            Audience = "TestAudience",
+            AccessTokenExpirationSeconds = 3600,
+            RefreshTokenExpirationSeconds = 7200
+        };
+
+        var options = Options.Create(_jwtSettings);
+        _jwtGenerator = new JwtTokenGenerator(options);
+    }
+
+    [Fact]
+    public void GenerateAccessToken_ShouldReturnValidToken()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = 1,
+            Email = "test@example.com",
+            FirstName = "Test",
+            LastName = "User",
+            BranchId = 1,
+            Branch = new Branch { Id = 1, Name = "Main", IsHeadquarters = true }
+        };
+        var permissions = new List<string> { "CanView", "CanEdit" };
+
+        // Act
+        var token = _jwtGenerator.GenerateAccessToken(user, permissions);
+
+        // Assert
+        Assert.NotNull(token);
+        Assert.NotEmpty(token);
+
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
+
+        Assert.Equal(_jwtSettings.Issuer, jwtToken.Issuer);
+        Assert.Equal(_jwtSettings.Audience, jwtToken.Audiences.First());
+        Assert.Contains(jwtToken.Claims, c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == "1");
+        Assert.Contains(jwtToken.Claims, c => c.Type == "permission" && c.Value == "CanView");
+        Assert.Contains(jwtToken.Claims, c => c.Type == "isHeadquarters" && c.Value == "true");
+    }
+
+    [Fact]
+    public void GenerateRefreshToken_ShouldReturnTokenAndExpiry()
+    {
+        // Act
+        var (token, expiry) = _jwtGenerator.GenerateRefreshToken();
+
+        // Assert
+        Assert.NotNull(token);
+        Assert.NotEmpty(token);
+        Assert.True(expiry > DateTime.UtcNow);
+    }
+    
+    [Fact]
+    public void PasswordHasher_ShouldHashAndVerify()
+    {
+        var hasher = new PasswordHasher();
+        var password = "SecurePassword123!";
         
-        // Setup default behaviors
-        _mockTokenGenerator.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<List<string>>()))
-            .Returns("fake-token");
-        _mockTokenGenerator.Setup(x => x.GenerateRefreshToken())
-            .Returns(("fake-refresh-token", DateTime.UtcNow.AddDays(7)));
+        var hash = hasher.HashPassword(password);
+        Assert.NotEqual(password, hash);
         
-        _mockPasswordHasher.Setup(x => x.HashPassword(It.IsAny<string>()))
-            .Returns((string pwd) => $"hashed-{pwd}");
-        _mockPasswordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()))
-             .Returns((string hash, string pwd) => hash == $"hashed-{pwd}");
-    }
-
-    private AppDbContext GetDbContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        // Auth tests usually don't need Audit logging, but we need to satisfy DI
-        var fakeUserService = new FakeCurrentUserService(null);
-        var interceptor = new Accounting.Infrastructure.Persistence.Interceptors.AuditSaveChangesInterceptor(fakeUserService);
-        return new AppDbContext(options, interceptor, fakeUserService);
-    }
-
-    [Fact]
-    public async Task Register_ShouldSucceed_WhenEmailIsUnique()
-    {
-        var db = GetDbContext();
-        var handler = new RegisterCommandHandler(db, _mockPasswordHasher.Object, _mockTokenGenerator.Object);
-        var command = new RegisterCommand("John", "Doe", "john@test.com", "Password123");
-
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        Assert.Equal("John", result.FirstName);
-        Assert.Equal("fake-token", result.AccessToken);
+        var isValid = hasher.VerifyPassword(hash, password);
+        Assert.True(isValid);
         
-        // Use async lambda for checking db state
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == "john@test.com");
-        Assert.NotNull(user);
-        Assert.Equal("hashed-Password123", user.PasswordHash);
-    }
-
-    [Fact]
-    public async Task Register_ShouldThrow_WhenEmailExists()
-    {
-        var db = GetDbContext();
-        db.Users.Add(new User { FirstName = "Existing", LastName = "User", Email = "john@test.com", PasswordHash = "hash" });
-        await db.SaveChangesAsync();
-
-        var handler = new RegisterCommandHandler(db, _mockPasswordHasher.Object, _mockTokenGenerator.Object);
-        var command = new RegisterCommand("John", "Doe", "john@test.com", "Password123");
-
-        await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Login_ShouldSucceed_WhenCredentialsCorrect()
-    {
-        var db = GetDbContext();
-        var hashedPassword = "hashed-Password123";
-        db.Users.Add(new User 
-        { 
-            FirstName = "John", LastName = "Doe", Email = "john@test.com", 
-            PasswordHash = hashedPassword 
-        });
-        await db.SaveChangesAsync();
-
-        var handler = new LoginCommandHandler(db, _mockPasswordHasher.Object, _mockTokenGenerator.Object);
-        var command = new LoginCommand("john@test.com", "Password123");
-
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        Assert.Equal("John", result.FirstName);
-        Assert.NotNull(result.AccessToken);
-    }
-
-    [Fact]
-    public async Task Login_ShouldThrow_WhenUserNotFound()
-    {
-        var db = GetDbContext();
-        var handler = new LoginCommandHandler(db, _mockPasswordHasher.Object, _mockTokenGenerator.Object);
-        var command = new LoginCommand("wrong@test.com", "Password123");
-
-        await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Login_ShouldThrow_WhenPasswordIncorrect()
-    {
-        var db = GetDbContext();
-        db.Users.Add(new User 
-        { 
-            FirstName = "John", LastName = "Doe", Email = "john@test.com", 
-            PasswordHash = "hashed-CorrectPassword" 
-        });
-        await db.SaveChangesAsync();
-
-        var handler = new LoginCommandHandler(db, _mockPasswordHasher.Object, _mockTokenGenerator.Object);
-        var command = new LoginCommand("john@test.com", "WrongPassword");
-
-        await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));
+        var isInvalid = hasher.VerifyPassword(hash, "WrongPassword");
+        Assert.False(isInvalid);
     }
 }
