@@ -41,13 +41,20 @@ public class ContactsController : ControllerBase
 
     [HttpGet]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Read)]
-    [ProducesResponseType(typeof(ContactListResult), StatusCodes.Status200OK)]
-    public async Task<ActionResult> List([FromQuery] int? branchId, [FromQuery] string? search,
-                                         [FromQuery] bool? isCustomer, [FromQuery] bool? isVendor, [FromQuery] bool? isEmployee, [FromQuery] bool? isRetail,
-                                         [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
-                                         CancellationToken ct = default)
+    [ProducesResponseType(typeof(Accounting.Application.Common.Models.PagedResult<ContactListItemDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult> List(
+        [FromQuery] int? branchId,
+        [FromQuery] string? search,
+        [FromQuery] string? sort,
+        [FromQuery] bool? isCustomer,
+        [FromQuery] bool? isVendor,
+        [FromQuery] bool? isEmployee,
+        [FromQuery] bool? isRetail,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
     {
-        var res = await _mediator.Send(new ListContactsQuery(branchId, search, isCustomer, isVendor, isEmployee, isRetail, page, pageSize), ct);
+        var res = await _mediator.Send(new ListContactsQuery(branchId, search, sort, isCustomer, isVendor, isEmployee, isRetail, pageNumber, pageSize), ct);
         return Ok(res);
     }
 

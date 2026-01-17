@@ -11,7 +11,8 @@ public record CreatePaymentCommand(
     string DateUtc,
     PaymentDirection Direction,
     string Amount,
-    string Currency
+    string Currency,
+    string? Description
 ) : IRequest<CreatePaymentResult>;
 
 public record CreatePaymentResult(

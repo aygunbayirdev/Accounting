@@ -71,6 +71,7 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
         p.Direction = req.Direction;
         p.Amount = amount; // decimal(18,2) — Money.TryParse2 + policy
         p.Currency = currency;
+        p.Description = req.Description?.Trim();
 
         // 5) Audit
         p.UpdatedAtUtc = DateTime.UtcNow;
@@ -136,6 +137,7 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
             fresh.Direction.ToString(),
             Money.S2(fresh.Amount),
             fresh.Currency,
+            fresh.Description,
             Convert.ToBase64String(fresh.RowVersion),
             fresh.CreatedAtUtc,
             fresh.UpdatedAtUtc

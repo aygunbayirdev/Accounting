@@ -13,7 +13,7 @@ public class GetItemByIdHandler : IRequestHandler<GetItemByIdQuery, ItemDetailDt
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public GetItemByIdHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -29,14 +29,20 @@ public class GetItemByIdHandler : IRequestHandler<GetItemByIdQuery, ItemDetailDt
         if (x is null) throw new NotFoundException("Item", r.Id);
 
         return new ItemDetailDto(
-            x.Id, 
-            x.CategoryId, 
+            x.Id,
+            x.CategoryId,
             x.Category?.Name,
-            x.Name, x.Unit, x.VatRate,
+            x.Code,
+            x.Name,
+            (int)x.Type,
+            x.Unit,
+            x.VatRate,
+            x.DefaultWithholdingRate ?? 0,
             x.PurchasePrice is null ? null : Money.S2(x.PurchasePrice.Value),
             x.SalesPrice is null ? null : Money.S2(x.SalesPrice.Value),
             Convert.ToBase64String(x.RowVersion),
-            x.CreatedAtUtc, x.UpdatedAtUtc
+            x.CreatedAtUtc,
+            x.UpdatedAtUtc
         );
     }
 }

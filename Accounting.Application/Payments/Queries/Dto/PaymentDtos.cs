@@ -13,6 +13,7 @@ public record PaymentListItemDto(
     string Direction,
     string Amount,
     string Currency,
+    string? Description,
     DateTime CreatedAtUtc
 );
 
@@ -25,6 +26,7 @@ public record PaymentDetailDto(
     string Direction,
     string Amount,
     string Currency,
+    string? Description,
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc

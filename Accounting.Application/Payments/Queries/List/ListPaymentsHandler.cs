@@ -19,7 +19,7 @@ namespace Accounting.Application.Payments.Queries.List
     {
         private readonly IAppDbContext _db;
         private readonly ICurrentUserService _currentUserService;
-        
+
         public ListPaymentsHandler(IAppDbContext db, ICurrentUserService currentUserService)
         {
             _db = db;
@@ -70,19 +70,20 @@ namespace Accounting.Application.Payments.Queries.List
             var pageQuery = query
                 .Skip((q.PageNumber - 1) * q.PageSize)
                 .Take(q.PageSize)
-                .Select(p => new { 
-                    p.Id, 
+                .Select(p => new {
+                    p.Id,
                     p.AccountId,
                     AccountCode = p.Account.Code,
                     AccountName = p.Account.Name,
                     p.ContactId,
                     ContactCode = p.ContactId != null ? p.Contact!.Code : null,
                     ContactName = p.ContactId != null ? p.Contact!.Name : null,
-                    p.LinkedInvoiceId, 
-                    p.DateUtc, 
-                    p.Direction, 
-                    p.Amount, 
-                    p.Currency, 
+                    p.LinkedInvoiceId,
+                    p.DateUtc,
+                    p.Direction,
+                    p.Amount,
+                    p.Currency,
+                    p.Description,
                     p.CreatedAtUtc,
                 });
 
@@ -106,6 +107,7 @@ namespace Accounting.Application.Payments.Queries.List
                 p.Direction.ToString(),
                 Money.S2(p.Amount),
                 p.Currency,
+                p.Description,
                 p.CreatedAtUtc
             )).ToList();
 

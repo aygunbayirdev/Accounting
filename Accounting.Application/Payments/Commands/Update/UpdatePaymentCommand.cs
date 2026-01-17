@@ -9,9 +9,10 @@ public record UpdatePaymentCommand(
     int AccountId,
     int? ContactId,
     int? LinkedInvoiceId,
-    string DateUtc,    // ISO-8601 UTC
+    string DateUtc,      // ISO-8601 UTC
     PaymentDirection Direction,
-    string Amount,     // string money, örn "1250.00"
-    string Currency,   // "TRY"
-    string RowVersion  // base64
+    string Amount,       // string money, örn "1250.00"
+    string Currency,     // "TRY"
+    string? Description, // Açıklama
+    string RowVersion    // base64
 ) : IRequest<PaymentDetailDto>;

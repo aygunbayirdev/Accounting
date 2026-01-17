@@ -14,7 +14,7 @@ public class GetPaymentByIdHandler : IRequestHandler<GetPaymentByIdQuery, Paymen
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public GetPaymentByIdHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -40,6 +40,7 @@ public class GetPaymentByIdHandler : IRequestHandler<GetPaymentByIdQuery, Paymen
             p.Direction.ToString(),
             Money.S2(p.Amount),
             p.Currency,
+            p.Description,
             Convert.ToBase64String(p.RowVersion),
             p.CreatedAtUtc,
             p.UpdatedAtUtc

@@ -22,6 +22,7 @@ public class Payment : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranc
     public PaymentDirection Direction { get; set; } = PaymentDirection.In;
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "TRY";
+    public string? Description { get; set; }  // Açıklama (opsiyonel)
 
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }

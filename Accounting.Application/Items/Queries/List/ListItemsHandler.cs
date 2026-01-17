@@ -13,7 +13,7 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public ListItemsHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -64,10 +64,15 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
         var items = await q.Skip((r.PageNumber - 1) * r.PageSize)
                            .Take(r.PageSize)
                            .Select(x => new ItemListItemDto(
-                               x.Id, 
+                               x.Id,
                                x.CategoryId,
                                x.Category == null ? null : x.Category.Name,
-                               x.Code, x.Name, x.Unit, x.VatRate,
+                               x.Code,
+                               x.Name,
+                               (int)x.Type,
+                               x.Unit,
+                               x.VatRate,
+                               x.DefaultWithholdingRate ?? 0,
                                x.PurchasePrice == null ? null : Money.S2(x.PurchasePrice.Value),
                                x.SalesPrice == null ? null : Money.S2(x.SalesPrice.Value),
                                x.CreatedAtUtc))

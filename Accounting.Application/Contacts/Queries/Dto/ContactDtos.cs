@@ -47,8 +47,3 @@ public record ContactListItemDto(
     string? Email,
     DateTime CreatedAtUtc
 );
-
-public record ContactListResult(
-    int TotalCount,
-    IReadOnlyList<ContactListItemDto> Items
-);

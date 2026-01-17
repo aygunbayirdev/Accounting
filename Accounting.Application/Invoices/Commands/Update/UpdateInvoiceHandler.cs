@@ -40,30 +40,21 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         _ctx.Entry(inv).Property(nameof(Invoice.RowVersion))
             .OriginalValue = Convert.FromBase64String(r.RowVersionBase64);
 
-        // 3) Normalize (parent)
+        // 3) Normalize (parent) - DateTime .NET tarafından otomatik parse edildi
         inv.Currency = (r.Currency ?? "TRY").Trim().ToUpperInvariant();
-        inv.DateUtc = r.DateUtc;
+        inv.DateUtc = DateTime.SpecifyKind(r.DateUtc, DateTimeKind.Utc);
         inv.ContactId = r.ContactId;
-        // inv.BranchId assignment removed - Branch cannot be changed
         inv.Type = NormalizeType(r.Type, inv.Type);
 
-        // ---- Satır diff senkronu ----
+        // 4) Header Fields
         var now = DateTime.UtcNow;
-
-        // sign: removed (All positive)
-
-        // 3.1) Parse Header Fields
-        DateTime? waybillDate = null;
-        if (!string.IsNullOrWhiteSpace(r.WaybillDateUtc) && DateTime.TryParse(r.WaybillDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var wbd)) 
-            waybillDate = DateTime.SpecifyKind(wbd, DateTimeKind.Utc);
-            
-        DateTime? dueDate = null;
-        if (!string.IsNullOrWhiteSpace(r.PaymentDueDateUtc) && DateTime.TryParse(r.PaymentDueDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var pdd)) 
-            dueDate = DateTime.SpecifyKind(pdd, DateTimeKind.Utc);
-
         inv.WaybillNumber = r.WaybillNumber;
-        inv.WaybillDateUtc = waybillDate;
-        inv.PaymentDueDateUtc = dueDate;
+        inv.WaybillDateUtc = r.WaybillDateUtc.HasValue
+            ? DateTime.SpecifyKind(r.WaybillDateUtc.Value, DateTimeKind.Utc)
+            : null;
+        inv.PaymentDueDateUtc = r.PaymentDueDateUtc.HasValue
+            ? DateTime.SpecifyKind(r.PaymentDueDateUtc.Value, DateTimeKind.Utc)
+            : null;
 
         // Reset Totals before accumulation
         inv.TotalLineGross = 0;
@@ -112,14 +103,14 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         // Yeni ekle
         foreach (var dto in r.Lines.Where(x => x.Id == 0))
         {
-             var nl = new InvoiceLine { CreatedAtUtc = now };
-             inv.Lines.Add(nl);
-             ProcessLine(inv, nl, dto, itemsMap, expensesMap, now);
+            var nl = new InvoiceLine { CreatedAtUtc = now };
+            inv.Lines.Add(nl);
+            ProcessLine(inv, nl, dto, itemsMap, expensesMap, now);
         }
 
         // 4) UpdatedAt + Header Totals (Accumulated in ProcessLine? No, better to sum after)
         inv.UpdatedAtUtc = now;
-        
+
         // RE-SUM from active lines
         var activeLines = inv.Lines.Where(l => !l.IsDeleted).ToList();
         inv.TotalLineGross = Money.R2(activeLines.Sum(x => x.Gross));
@@ -128,7 +119,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         inv.TotalVat = Money.R2(activeLines.Sum(x => x.Vat));
         inv.TotalWithholding = Money.R2(activeLines.Sum(x => x.WithholdingAmount));
         inv.TotalGross = Money.R2(inv.TotalNet + inv.TotalVat);
-        
+
         // Balance Update
         inv.Balance = inv.TotalGross - inv.TotalWithholding;
         await _balanceService.RecalculateBalanceAsync(inv.Id, ct); // This might override Balance if it sums transactions? 
@@ -248,14 +239,14 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         decimal discountRate = 0;
         if (!string.IsNullOrWhiteSpace(dto.DiscountRate))
-             Money.TryParse4(dto.DiscountRate, out discountRate);
+            Money.TryParse4(dto.DiscountRate, out discountRate);
 
         int withholdingRate = dto.WithholdingRate ?? 0;
 
         // Normalize
         qty = Money.R3(Math.Abs(qty));
         unitPrice = Money.R4(unitPrice);
-        
+
         // Calculations
         var gross = Money.R2(qty * unitPrice);
         var discountAmount = Money.R2(gross * discountRate / 100m);
@@ -283,7 +274,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         {
             if (dto.ItemId.HasValue) throw new BusinessRuleException("Masraf faturasında ItemId olamaz.");
             if (!dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Masraf faturasında ExpenseDefinitionId zorunludur.");
-            
+
             line.ExpenseDefinitionId = dto.ExpenseDefinitionId;
             line.ItemId = null;
 
@@ -367,21 +358,21 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             // Check ItemType - Skip if NOT Inventory
             if (itemsMap != null && itemsMap.TryGetValue(line.ItemId.Value, out var it))
             {
-                 if ((ItemType)it.type != ItemType.Inventory) continue;
+                if ((ItemType)it.type != ItemType.Inventory) continue;
             }
 
-            var absQty = line.Qty; 
+            var absQty = line.Qty;
             if (absQty == 0) continue;
 
             // Create command
             var cmd = new Accounting.Application.StockMovements.Commands.Create.CreateStockMovementCommand(
-                WarehouseId: defaultWarehouse.Id, 
+                WarehouseId: defaultWarehouse.Id,
                 ItemId: line.ItemId.Value,
                 Type: movementType.Value,
                 Quantity: Money.S3(absQty),
                 TransactionDateUtc: invoice.DateUtc,
                 Note: null,
-                InvoiceId: invoice.Id 
+                InvoiceId: invoice.Id
             );
 
             await _mediator.Send(cmd, ct);

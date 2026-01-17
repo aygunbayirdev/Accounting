@@ -77,9 +77,9 @@ public class PostExpenseListToBillHandler
         // CreateInvoiceCommand (yeniden kullanım)
         var lines = list.Lines.Select(l => new CreateInvoiceLineDto(
             ItemId: req.ItemId,
-            ExpenseDefinitionId: null,      
+            ExpenseDefinitionId: null,
             Qty: "1.000",
-            UnitPrice: Money.S2(l.Amount),  
+            UnitPrice: Money.S2(l.Amount),
             VatRate: l.VatRate,
             DiscountRate: null,
             WithholdingRate: null
@@ -111,10 +111,11 @@ public class PostExpenseListToBillHandler
                     AccountId: req.PaymentAccountId.Value,
                     ContactId: req.SupplierId,
                     LinkedInvoiceId: created.Id,
+                    DateUtc: req.PaymentDateUtc ?? dateUtc.ToString("o", CultureInfo.InvariantCulture),
                     Direction: PaymentDirection.Out,
                     Amount: created.TotalGross,
                     Currency: req.Currency.ToUpperInvariant(),
-                    DateUtc: req.PaymentDateUtc ?? dateUtc.ToString("o", CultureInfo.InvariantCulture)
+                    Description: null  // Masraf listesinden otomatik ödeme
                 );
 
                 await _mediator.Send(paymentCmd, ct);

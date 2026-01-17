@@ -36,9 +36,12 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDt
 
         // (4) normalize + parse
         e.CategoryId = r.CategoryId;
+        e.Code = r.Code.Trim();
         e.Name = r.Name.Trim();
+        e.Type = (Domain.Enums.ItemType)r.Type;
         e.Unit = r.Unit.Trim();
         e.VatRate = r.VatRate;
+        e.DefaultWithholdingRate = r.DefaultWithholdingRate;
 
         if (r.PurchasePrice is null)
         {
@@ -82,10 +85,13 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDt
         return new ItemDetailDto(
             fresh.Id,
             fresh.CategoryId,
-            fresh.Category?.Name, // Include in query below
+            fresh.Category?.Name,
+            fresh.Code,
             fresh.Name,
+            (int)fresh.Type,
             fresh.Unit,
             fresh.VatRate,
+            fresh.DefaultWithholdingRate ?? 0,
             fresh.PurchasePrice is null ? null : Money.S2(fresh.PurchasePrice.Value),
             fresh.SalesPrice is null ? null : Money.S2(fresh.SalesPrice.Value),
             Convert.ToBase64String(fresh.RowVersion),

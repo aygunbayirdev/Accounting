@@ -51,7 +51,8 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
             DateUtc = DateTime.SpecifyKind(parsed, DateTimeKind.Utc),
             Direction = req.Direction,
             Amount = amount,  // decimal(18,2) DB
-            Currency = currency
+            Currency = currency,
+            Description = req.Description?.Trim()
         };
 
         // Transaction: Payment + Invoice Balance birlikte commit

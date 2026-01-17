@@ -48,8 +48,10 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
             CategoryId = r.CategoryId,
             Code = r.Code.Trim(),
             Name = r.Name.Trim(),
+            Type = (Domain.Enums.ItemType)r.Type,
             Unit = r.Unit.Trim(),
             VatRate = r.VatRate,
+            DefaultWithholdingRate = r.DefaultWithholdingRate,
             PurchasePrice = pPrice,
             SalesPrice = sPrice
             // Created/Updated defaults via interceptor
@@ -65,17 +67,20 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
         string? catName = null;
         if (e.CategoryId.HasValue)
         {
-             var cat = await _db.Categories.FindAsync(new object[] { e.CategoryId.Value }, ct);
-             catName = cat?.Name;
+            var cat = await _db.Categories.FindAsync(new object[] { e.CategoryId.Value }, ct);
+            catName = cat?.Name;
         }
 
         return new ItemDetailDto(
             saved.Id,
             saved.CategoryId,
             catName,
+            saved.Code,
             saved.Name,
+            (int)saved.Type,
             saved.Unit,
             saved.VatRate,
+            saved.DefaultWithholdingRate ?? 0,
             saved.PurchasePrice is null ? null : Money.S2(saved.PurchasePrice.Value),
             saved.SalesPrice is null ? null : Money.S2(saved.SalesPrice.Value),
             Convert.ToBase64String(saved.RowVersion),

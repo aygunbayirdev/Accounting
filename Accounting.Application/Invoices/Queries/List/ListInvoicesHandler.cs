@@ -17,7 +17,7 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public ListInvoicesHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -80,6 +80,7 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
             .Select(i => new {
                 i.Id,
                 i.ContactId,
+                i.InvoiceNumber,
                 i.Type,
                 i.DateUtc,
                 i.Currency,
@@ -107,6 +108,7 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
             i.ContactId,
             i.ContactCode,
             i.ContactName,
+            i.InvoiceNumber ?? "",
             i.Type.ToString(),
             i.DateUtc,
             i.Currency,

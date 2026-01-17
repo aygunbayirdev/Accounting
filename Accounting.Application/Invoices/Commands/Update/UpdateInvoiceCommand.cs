@@ -4,13 +4,13 @@ using MediatR;
 public sealed record UpdateInvoiceCommand(
     int Id,
     string RowVersionBase64,
-    DateTime DateUtc,
+    DateTime DateUtc,            // DateTime - .NET otomatik parse eder
     string Currency,
     int ContactId,
     string Type,
     string? WaybillNumber,
-    string? WaybillDateUtc,
-    string? PaymentDueDateUtc,
+    DateTime? WaybillDateUtc,    // DateTime? - .NET otomatik parse eder
+    DateTime? PaymentDueDateUtc, // DateTime? - .NET otomatik parse eder
     IReadOnlyList<UpdateInvoiceLineDto> Lines
 ) : IRequest<InvoiceDto>;
 
