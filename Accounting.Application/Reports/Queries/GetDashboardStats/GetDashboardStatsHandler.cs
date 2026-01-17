@@ -1,12 +1,10 @@
 using Accounting.Application.Common.Abstractions;
-using Accounting.Application.Common.Utils;
+using Accounting.Application.Reports.Queries.Dtos;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Accounting.Application.Reports.Queries;
-
-public record GetDashboardStatsQuery(int BranchId) : IRequest<DashboardStatsDto>;
+namespace Accounting.Application.Reports.Queries.GetDashboardStats;
 
 public class GetDashboardStatsHandler(IAppDbContext db) : IRequestHandler<GetDashboardStatsQuery, DashboardStatsDto>
 {

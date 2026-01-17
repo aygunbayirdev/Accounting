@@ -1,11 +1,10 @@
 using Accounting.Application.Common.Abstractions;
+using Accounting.Application.Reports.Queries.Dtos;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Accounting.Application.Reports.Queries;
-
-public record GetProfitLossQuery(int? BranchId, DateTime? DateFrom, DateTime? DateTo) : IRequest<ProfitLossDto>;
+namespace Accounting.Application.Reports.Queries.GetProfitLoss;
 
 public class GetProfitLossHandler(IAppDbContext db) : IRequestHandler<GetProfitLossQuery, ProfitLossDto>
 {

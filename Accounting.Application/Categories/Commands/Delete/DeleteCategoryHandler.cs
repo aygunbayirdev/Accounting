@@ -5,8 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Categories.Commands.Delete;
 
-public record DeleteCategoryCommand(int Id, string RowVersion) : IRequest<bool>;
-
 public class DeleteCategoryHandler(IAppDbContext db) : IRequestHandler<DeleteCategoryCommand, bool>
 {
     public async Task<bool> Handle(DeleteCategoryCommand r, CancellationToken ct)

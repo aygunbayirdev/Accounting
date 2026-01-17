@@ -5,6 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.AspNetCore.Authorization;
 using Accounting.Domain.Constants;
+using Accounting.Application.Reports.Queries.GetContactStatement;
+using Accounting.Application.Reports.Queries.Dtos;
+using Accounting.Application.Reports.Queries.GetStockStatus;
+using Accounting.Application.Reports.Queries.GetProfitLoss;
+using Accounting.Application.Reports.Queries.GetDashboardStats;
 
 namespace Accounting.Api.Controllers;
 

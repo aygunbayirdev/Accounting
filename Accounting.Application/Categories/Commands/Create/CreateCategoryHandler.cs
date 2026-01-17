@@ -5,12 +5,6 @@ using MediatR;
 
 namespace Accounting.Application.Categories.Commands.Create;
 
-public record CreateCategoryCommand(
-    string Name,
-    string? Description,
-    string? Color
-) : IRequest<CategoryDetailDto>;
-
 public class CreateCategoryHandler(IAppDbContext db) : IRequestHandler<CreateCategoryCommand, CategoryDetailDto>
 {
     public async Task<CategoryDetailDto> Handle(CreateCategoryCommand r, CancellationToken ct)

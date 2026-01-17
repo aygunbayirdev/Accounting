@@ -6,8 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Branches.Queries.GetById;
 
-public record GetBranchByIdQuery(int Id) : IRequest<BranchDetailDto>;
-
 public class GetBranchByIdHandler : IRequestHandler<GetBranchByIdQuery, BranchDetailDto>
 {
     private readonly IAppDbContext _context;

@@ -1,11 +1,9 @@
 using Accounting.Application.Common.Abstractions;
-using Accounting.Application.Common.Utils;
+using Accounting.Application.Reports.Queries.Dtos;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Accounting.Application.Reports.Queries;
-
-public record GetStockStatusQuery : IRequest<List<StockStatusDto>>;
+namespace Accounting.Application.Reports.Queries.GetStockStatus;
 
 public class GetStockStatusHandler(IAppDbContext db, IStockService stockService) : IRequestHandler<GetStockStatusQuery, List<StockStatusDto>>
 {

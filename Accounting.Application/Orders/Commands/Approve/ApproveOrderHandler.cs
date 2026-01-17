@@ -9,8 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Approve;
 
-public record ApproveOrderCommand(int Id, byte[] RowVersion) : IRequest<bool>;
-
 public class ApproveOrderHandler : IRequestHandler<ApproveOrderCommand, bool>
 {
     private readonly IAppDbContext _db;

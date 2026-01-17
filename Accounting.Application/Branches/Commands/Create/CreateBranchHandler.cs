@@ -5,8 +5,6 @@ using MediatR;
 
 namespace Accounting.Application.Branches.Commands.Create;
 
-public record CreateBranchCommand(string Code, string Name) : IRequest<BranchDetailDto>;
-
 public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, BranchDetailDto>
 {
     private readonly IAppDbContext _context;

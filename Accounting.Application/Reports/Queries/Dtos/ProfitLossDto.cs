@@ -1,7 +1,7 @@
 using Accounting.Application.Common.JsonConverters;
 using System.Text.Json.Serialization;
 
-namespace Accounting.Application.Reports.Queries;
+namespace Accounting.Application.Reports.Queries.Dtos;
 
 public record ProfitLossDto(
     [property: JsonConverter(typeof(AmountJsonConverter))]

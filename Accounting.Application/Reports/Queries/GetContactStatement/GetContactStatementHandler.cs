@@ -1,15 +1,10 @@
 using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Exceptions;
-using Accounting.Application.Common.Utils;
+using Accounting.Application.Reports.Queries.Dtos;
 using Accounting.Application.Services;
-using Accounting.Domain.Entities;
-using Accounting.Domain.Enums;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
-namespace Accounting.Application.Reports.Queries;
-
-public record GetContactStatementQuery(int ContactId, DateTime? DateFrom, DateTime? DateTo) : IRequest<ContactStatementDto>;
+namespace Accounting.Application.Reports.Queries.GetContactStatement;
 
 public class GetContactStatementHandler : IRequestHandler<GetContactStatementQuery, ContactStatementDto>
 {
@@ -40,12 +35,12 @@ public class GetContactStatementHandler : IRequestHandler<GetContactStatementQue
         var transactions = await _balanceService.GetTransactionsAsync(request.ContactId, fromDate, toDate, ct);
 
         // 3. Build Result with Running Balance
-        var resultItems = new List<StatementItemDto>();
+        var resultItems = new List<ContactStatementLineDto>();
 
         // Add Opening Balance Line
         if (fromDate > DateTime.MinValue)
         {
-            resultItems.Add(new StatementItemDto(
+            resultItems.Add(new ContactStatementLineDto(
                 fromDate,
                 "DEVİR",
                 "-",
@@ -63,7 +58,7 @@ public class GetContactStatementHandler : IRequestHandler<GetContactStatementQue
             currentBalance += txn.Debt;
             currentBalance -= txn.Credit;
 
-            resultItems.Add(new StatementItemDto(
+            resultItems.Add(new ContactStatementLineDto(
                 txn.DateUtc,
                 txn.Type,
                 txn.DocNo,

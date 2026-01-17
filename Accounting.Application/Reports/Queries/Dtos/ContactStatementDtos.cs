@@ -1,15 +1,15 @@
 using Accounting.Application.Common.JsonConverters;
 using System.Text.Json.Serialization;
 
-namespace Accounting.Application.Reports.Queries;
+namespace Accounting.Application.Reports.Queries.Dtos;
 
 public record ContactStatementDto(
     int ContactId,
     string ContactName,
-    List<StatementItemDto> Items
+    List<ContactStatementLineDto> Items
 );
 
-public record StatementItemDto(
+public record ContactStatementLineDto(
     DateTime DateUtc,
     string Type,        // "Fatura", "Tahsilat", "Ödeme"
     string DocumentNo,

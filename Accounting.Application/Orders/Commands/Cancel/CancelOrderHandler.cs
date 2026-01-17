@@ -8,8 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Cancel;
 
-public record CancelOrderCommand(int Id, string RowVersion) : IRequest<bool>;
-
 public class CancelOrderHandler : IRequestHandler<CancelOrderCommand, bool>
 {
     private readonly IAppDbContext _db;

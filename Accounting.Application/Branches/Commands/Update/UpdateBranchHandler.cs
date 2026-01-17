@@ -6,8 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Branches.Commands.Update;
 
-public record UpdateBranchCommand(int Id, string Code, string Name, string RowVersionBase64) : IRequest<BranchDetailDto>;
-
 public class UpdateBranchHandler : IRequestHandler<UpdateBranchCommand, BranchDetailDto>
 {
     private readonly IAppDbContext _context;

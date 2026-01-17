@@ -9,8 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Delete;
 
-public record DeleteOrderCommand(int Id, string RowVersion) : IRequest<bool>;
-
 public class DeleteOrderHandler : IRequestHandler<DeleteOrderCommand, bool>
 {
     private readonly IAppDbContext _db;

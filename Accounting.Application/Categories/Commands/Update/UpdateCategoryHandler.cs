@@ -6,14 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Categories.Commands.Update;
 
-public record UpdateCategoryCommand(
-    int Id,
-    string Name,
-    string? Description,
-    string? Color,
-    string RowVersion
-) : IRequest<CategoryDetailDto>;
-
 public class UpdateCategoryHandler(IAppDbContext db) : IRequestHandler<UpdateCategoryCommand, CategoryDetailDto>
 {
     public async Task<CategoryDetailDto> Handle(UpdateCategoryCommand r, CancellationToken ct)
