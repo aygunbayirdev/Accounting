@@ -38,7 +38,17 @@ public class ReviewExpenseListHandler : IRequestHandler<ReviewExpenseListCommand
             list.BranchId,
             list.Name,
             list.Status.ToString(),
-            new List<ExpenseLineDto>(),
+            list.Lines.Select(l => new ExpenseLineDto(
+                l.Id,
+                l.ExpenseListId,
+                l.DateUtc,
+                l.SupplierId,
+                l.Currency,
+                l.Amount,
+                l.VatRate,
+                l.Category,
+                l.Notes
+            )).ToList(),
             DecimalExtensions.RoundAmount(list.Lines.Sum(x => x.Amount)),
             Convert.ToBase64String(list.RowVersion),
             list.CreatedAtUtc,

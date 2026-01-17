@@ -11,22 +11,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.ExpenseLists.Queries.List;
 
-public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, PagedResult<ExpenseListDetailDto>>
+public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, PagedResult<ExpenseListListItemDto>>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public ListExpenseListsHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
         _currentUserService = currentUserService;
     }
 
-    public async Task<PagedResult<ExpenseListDetailDto>> Handle(ListExpenseListsQuery q, CancellationToken ct)
+    public async Task<PagedResult<ExpenseListListItemDto>> Handle(ListExpenseListsQuery q, CancellationToken ct)
     {
         var query = _db.ExpenseLists
             .AsNoTracking()
             .ApplyBranchFilter(_currentUserService)
+            .Include(x => x.Lines.Where(l => !l.IsDeleted))
             .Where(x => !x.IsDeleted);
 
         // Filters
@@ -62,24 +63,22 @@ public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, Pa
         var items = await query
             .Skip((q.PageNumber - 1) * q.PageSize)
             .Take(q.PageSize)
-            .Select(x => new ExpenseListDetailDto(
+            .Select(x => new ExpenseListListItemDto(
                 x.Id,
                 x.BranchId,
                 x.Name,
                 x.Status.ToString(),
-                new List<ExpenseLineDto>(),
-                DecimalExtensions.RoundAmount(x.Lines.Sum(x => x.Amount)),
-                Convert.ToBase64String(x.RowVersion),
+                x.Lines.Sum(l => l.Amount),
                 x.CreatedAtUtc,
                 x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<ExpenseListDetailDto>(
-            Items: items,
+        return new PagedResult<ExpenseListListItemDto>(
             Total: total,
             PageNumber: q.PageNumber,
-            PageSize: q.PageSize
+            PageSize: q.PageSize,
+            Items: items
         );
     }
 }

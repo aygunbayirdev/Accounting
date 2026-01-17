@@ -11,4 +11,4 @@ public record ListExpenseListsQuery(
     int PageSize = PaginationConstants.DefaultPageSize,
     string? Status = null,  // "Draft", "Reviewed", "Posted"
     string? Sort = "createdAtUtc:desc"
-) : IRequest<PagedResult<ExpenseListDetailDto>>;
+) : IRequest<PagedResult<ExpenseListListItemDto>>;
