@@ -39,6 +39,7 @@ public record InvoiceLineDto(
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Gross,
 
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal GrandTotal
 );
 
@@ -95,10 +96,19 @@ public record InvoiceListItemDto(
     string Type,             // Sales / Purchase
     DateTime DateUtc,
     string Currency,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalNet,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalVat,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalGross,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Balance,
+
     DateTime CreatedAtUtc,
     int BranchId,
     string BranchCode,

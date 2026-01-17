@@ -15,7 +15,6 @@ public record UpdateItemCommand(
     string Unit,
     int VatRate,
 
-    [property: JsonConverter(typeof(PercentJsonConverter))]
     int? DefaultWithholdingRate, // Varsayılan tevkifat oranı (%)
 
     [property: JsonConverter(typeof(AmountJsonConverter))]

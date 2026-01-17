@@ -17,5 +17,6 @@ public record CreateInvoiceLineDto(
 
     [property: JsonConverter(typeof(PercentJsonConverter))]
     decimal? DiscountRate,
+
     int? WithholdingRate
 );

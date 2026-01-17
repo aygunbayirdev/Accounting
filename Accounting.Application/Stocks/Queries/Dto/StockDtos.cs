@@ -31,7 +31,10 @@ public record StockListItemDto(
     string ItemCode,
     string ItemName,
     string Unit,
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Quantity,
+
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
@@ -47,7 +50,10 @@ public record StockDetailDto(
     string ItemCode,
     string ItemName,
     string Unit,
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Quantity,
+
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc

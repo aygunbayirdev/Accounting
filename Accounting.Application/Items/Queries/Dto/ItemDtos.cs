@@ -13,7 +13,6 @@ public record ItemListItemDto(
     string Unit,
     int VatRate,
 
-    [property: JsonConverter(typeof(PercentJsonConverter))]
     int DefaultWithholdingRate,     // Varsayılan tevkifat oranı
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
@@ -35,7 +34,6 @@ public record ItemDetailDto(
     string Unit,
     int VatRate,
 
-    [property: JsonConverter(typeof(PercentJsonConverter))]
     int DefaultWithholdingRate,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]

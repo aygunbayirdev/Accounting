@@ -33,6 +33,5 @@ public sealed record UpdateInvoiceLineDto(
     [property: JsonConverter(typeof(PercentJsonConverter))]
     decimal? DiscountRate,
 
-    [property: JsonConverter(typeof(PercentJsonConverter))]
     int? WithholdingRate
 );
