@@ -27,6 +27,12 @@ public class UpdateChequeStatusHandler : IRequestHandler<UpdateChequeStatusComma
         if (cheque == null)
             throw new NotFoundException("Cheque", request.Id);
 
+        // Optimistic Concurrency Check
+        var requestedRowVersion = Convert.FromBase64String(request.RowVersionBase64);
+        if (!cheque.RowVersion.SequenceEqual(requestedRowVersion))
+            throw new DbUpdateConcurrencyException(
+                "Bu çek/senet başka bir kullanıcı tarafından güncellenmiş. Lütfen sayfayı yenileyip tekrar deneyin.");
+
         // Status Validations
         if (cheque.Status == ChequeStatus.Paid)
             throw new BusinessRuleException("Zaten ödenmiş/tahsil edilmiş evrakın durumu değiştirilemez.");
@@ -56,6 +62,7 @@ public class UpdateChequeStatusHandler : IRequestHandler<UpdateChequeStatusComma
                 // 3. Cheque status güncelle
                 cheque.Status = request.NewStatus;
                 cheque.UpdatedAtUtc = DateTime.UtcNow;
+                // RowVersion otomatik güncellenir (EF Core tarafından)
                 await _db.SaveChangesAsync(ct);
 
                 await tx.CommitAsync(ct);
@@ -71,6 +78,7 @@ public class UpdateChequeStatusHandler : IRequestHandler<UpdateChequeStatusComma
             // Bounced veya diğer durumlar - sadece status değişikliği
             cheque.Status = request.NewStatus;
             cheque.UpdatedAtUtc = DateTime.UtcNow;
+            // RowVersion otomatik güncellenir (EF Core tarafından)
             await _db.SaveChangesAsync(ct);
         }
     }

@@ -40,7 +40,8 @@ public class GetChequeByIdHandler : IRequestHandler<GetChequeByIdQuery, ChequeDe
             cheque.BankName,
             cheque.Status.ToString(),
             cheque.CreatedAtUtc,
-            cheque.UpdatedAtUtc
+            cheque.UpdatedAtUtc,
+            Convert.ToBase64String(cheque.RowVersion)
         );
     }
 }

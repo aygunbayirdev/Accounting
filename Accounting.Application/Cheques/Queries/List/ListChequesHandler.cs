@@ -53,7 +53,8 @@ public class ListChequesHandler : IRequestHandler<ListChequesQuery, PagedResult<
                 c.BankName,
                 c.Status.ToString(),
                 c.CreatedAtUtc,
-                c.UpdatedAtUtc
+                c.UpdatedAtUtc,
+                Convert.ToBase64String(c.RowVersion)
             ))
             .ToListAsync(ct);
 

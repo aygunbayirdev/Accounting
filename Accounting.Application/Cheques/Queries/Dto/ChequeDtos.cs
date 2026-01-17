@@ -7,32 +7,30 @@ public record ChequeDetailDto(
     int Id,
     int BranchId,
     string ChequeNumber,
-    string Type,
+    string Type, // "Cheque" or "PromissoryNote"
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Amount,
 
-    DateTime DueDateUtc,
+    DateTime DueDate,
     string? DrawerName,
     string? BankName,
-    string Status,
+    string Status, // "Pending", "Paid", "Endorsed", "Bounced", "Cancelled"
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    string RowVersionBase64
 );
 
 public record ChequeListItemDto(
     int Id,
-    int BranchId,
     string ChequeNumber,
     string Type,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Amount,
 
-    DateTime DueDateUtc,
+    DateTime DueDate,
     string? DrawerName,
-    string? BankName,
     string Status,
-    DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
+    string RowVersionBase64
 );
