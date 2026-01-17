@@ -11,12 +11,10 @@ public class UpdatePaymentValidator : AbstractValidator<UpdatePaymentCommand>
         RuleFor(x => x.Id).GreaterThan(0);
         RuleFor(x => x.AccountId).GreaterThan(0);
         RuleFor(x => x.Direction).IsInEnum();
-        RuleFor(x => x.DateUtc).MustBeValidUtcDateTime();           // Extension
+        RuleFor(x => x.DateUtc).NotEmpty().WithMessage("DateUtc gereklidir.");
         RuleFor(x => x.Amount).MustBeValidMoneyAmount();            // Extension
         RuleFor(x => x.Currency).MustBeValidCurrency();             // Extension
         RuleFor(x => x.RowVersion).MustBeValidRowVersion();         // Extension
-
-        RuleFor(x => x.Amount).NotEmpty();
 
         When(x => x.ContactId.HasValue, () =>
         {

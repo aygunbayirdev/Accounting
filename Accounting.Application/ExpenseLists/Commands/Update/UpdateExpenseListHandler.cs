@@ -76,13 +76,10 @@ public class UpdateExpenseListHandler : IRequestHandler<UpdateExpenseListCommand
         // 4. Yeni ve güncellenecek line'lar
         foreach (var lineDto in req.Lines)
         {
-            if (!DateTime.TryParse(lineDto.DateUtc, CultureInfo.InvariantCulture,
-                                   DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                                   out var dateUtc))
-                throw new FluentValidation.ValidationException("DateUtc is invalid.");
-
             if (!Money.TryParse2(lineDto.Amount, out var amount))
                 throw new FluentValidation.ValidationException("Amount is invalid.");
+
+            var dateUtc = DateTime.SpecifyKind(lineDto.DateUtc, DateTimeKind.Utc);
 
             if (lineDto.Id.HasValue)
             {

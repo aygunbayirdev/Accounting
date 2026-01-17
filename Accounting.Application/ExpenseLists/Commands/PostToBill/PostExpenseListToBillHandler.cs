@@ -63,16 +63,9 @@ public class PostExpenseListToBillHandler
             throw new InvalidOperationException("Expense lines have multiple suppliers; please normalize before posting.");
 
         // Fatura tarihi (UTC)
-        DateTime dateUtc;
-        if (!string.IsNullOrWhiteSpace(req.DateUtc))
-        {
-            if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out dateUtc))
-                throw new ArgumentException("DateUtc is invalid.");
-        }
-        else
-        {
-            dateUtc = DateTime.UtcNow;
-        }
+        var dateUtc = req.DateUtc.HasValue
+            ? DateTime.SpecifyKind(req.DateUtc.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow;
 
         // CreateInvoiceCommand (yeniden kullanım)
         var lines = list.Lines.Select(l => new CreateInvoiceLineDto(
@@ -87,10 +80,10 @@ public class PostExpenseListToBillHandler
 
         var createCmd = new CreateInvoiceCommand(
             ContactId: req.SupplierId,
-            DateUtc: dateUtc.ToString("o", CultureInfo.InvariantCulture),
+            DateUtc: dateUtc,
             Currency: req.Currency.ToUpperInvariant(),
             Lines: lines,
-            Type: InvoiceType.Purchase.ToString(),
+            Type: InvoiceType.Purchase,
             WaybillNumber: null,
             WaybillDateUtc: null,
             PaymentDueDateUtc: null
@@ -111,11 +104,11 @@ public class PostExpenseListToBillHandler
                     AccountId: req.PaymentAccountId.Value,
                     ContactId: req.SupplierId,
                     LinkedInvoiceId: created.Id,
-                    DateUtc: req.PaymentDateUtc ?? dateUtc.ToString("o", CultureInfo.InvariantCulture),
+                    DateUtc: req.PaymentDateUtc ?? dateUtc,
                     Direction: PaymentDirection.Out,
                     Amount: created.TotalGross,
                     Currency: req.Currency.ToUpperInvariant(),
-                    Description: null  // Masraf listesinden otomatik ödeme
+                    Description: null
                 );
 
                 await _mediator.Send(paymentCmd, ct);

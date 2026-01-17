@@ -26,8 +26,8 @@ namespace Accounting.Application.Invoices.Commands.Update
             RuleFor(x => x.RowVersionBase64).MustBeValidRowVersion();  // Extension
 
             RuleFor(x => x.DateUtc)
-                .Must(d => d.Kind == DateTimeKind.Utc)
-                .WithMessage("DateUtc UTC olmalıdır.");
+                .Must(d => d.Kind == DateTimeKind.Utc || d.Kind == DateTimeKind.Unspecified)
+                .WithMessage("DateUtc geçerli bir tarih olmalıdır.");
 
             RuleFor(x => x.Currency).MustBeValidCurrency();            // Extension
 
@@ -38,10 +38,7 @@ namespace Accounting.Application.Invoices.Commands.Update
                 .Must(l => l != null && l.Count > 0).WithMessage("En az bir satır olmalıdır.");
 
             RuleFor(x => x.Type)
-                .NotEmpty()
-                .Must(v => int.TryParse(v, out var n) ? Enum.IsDefined(typeof(InvoiceType), n)
-                                        : new[] { "Sales", "Purchase", "SalesReturn", "PurchaseReturn", "Expense" }
-                                          .Contains(v, StringComparer.OrdinalIgnoreCase))
+                .IsInEnum()
                 .WithMessage("Geçersiz fatura türü.");
 
             // ✅ Branch Tutarlılık Kontrolü: Contact aynı şubeye ait olmalı

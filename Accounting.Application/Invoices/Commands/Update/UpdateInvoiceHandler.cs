@@ -40,11 +40,11 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         _ctx.Entry(inv).Property(nameof(Invoice.RowVersion))
             .OriginalValue = Convert.FromBase64String(r.RowVersionBase64);
 
-        // 3) Normalize (parent) - DateTime .NET tarafından otomatik parse edildi
+        // 3) Normalize (parent)
         inv.Currency = (r.Currency ?? "TRY").Trim().ToUpperInvariant();
         inv.DateUtc = DateTime.SpecifyKind(r.DateUtc, DateTimeKind.Utc);
         inv.ContactId = r.ContactId;
-        inv.Type = NormalizeType(r.Type, inv.Type);
+        inv.Type = r.Type;
 
         // 4) Header Fields
         var now = DateTime.UtcNow;

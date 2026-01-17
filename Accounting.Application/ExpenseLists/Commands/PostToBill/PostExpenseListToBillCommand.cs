@@ -9,8 +9,8 @@ public record PostExpenseListToBillCommand(
     string Currency,
     bool CreatePayment,
     int? PaymentAccountId = null,
-    string? PaymentDateUtc = null,
-    string? DateUtc = null
+    DateTime? PaymentDateUtc = null,
+    DateTime? DateUtc = null
 ) : IRequest<PostExpenseListToBillResult>;
 
 public record PostExpenseListToBillResult(

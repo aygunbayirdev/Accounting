@@ -27,17 +27,12 @@ public class CreateExpenseListHandler : IRequestHandler<CreateExpenseListCommand
         // Lines ekle
         foreach (var lineDto in req.Lines)
         {
-            if (!DateTime.TryParse(lineDto.DateUtc, CultureInfo.InvariantCulture,
-                                   DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                                   out var dateUtc))
-                throw new FluentValidation.ValidationException("DateUtc is invalid.");
-
             if (!Money.TryParse2(lineDto.Amount, out var amount))
                 throw new FluentValidation.ValidationException("Amount is invalid.");
 
             var line = new ExpenseLine
             {
-                DateUtc = dateUtc,
+                DateUtc = DateTime.SpecifyKind(lineDto.DateUtc, DateTimeKind.Utc),
                 SupplierId = lineDto.SupplierId,
                 Currency = lineDto.Currency.ToUpperInvariant(),
                 Amount = amount,

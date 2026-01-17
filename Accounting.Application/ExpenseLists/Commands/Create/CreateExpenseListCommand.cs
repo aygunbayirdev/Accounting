@@ -11,7 +11,7 @@ public record CreateExpenseListCommand(
 ) : IRequest<ExpenseListDetailDto>;
 
 public record CreateExpenseLineDto(
-    string DateUtc,
+    DateTime DateUtc,
     int? SupplierId,
     string Currency,
     string Amount,

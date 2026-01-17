@@ -25,15 +25,15 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
         RuleFor(x => x.ContactId)
             .GreaterThan(0);
 
-        RuleFor(x => x.DateUtc).MustBeValidUtcDateTime();           // Extension
+        // DateTime .NET tarafından otomatik parse edildi, sadece geçerli tarih olduğunu kontrol et
+        RuleFor(x => x.DateUtc)
+            .NotEmpty()
+            .WithMessage("DateUtc gereklidir.");
+
         RuleFor(x => x.Currency).MustBeValidCurrency();             // Extension
 
         RuleFor(x => x.Type)
-            .NotEmpty()
-            .Must(v => int.TryParse(v, out var n)
-                ? Enum.IsDefined(typeof(InvoiceType), n)
-                : new[] { "Sales", "Purchase", "SalesReturn", "PurchaseReturn", "Expense" }
-                    .Contains(v, StringComparer.OrdinalIgnoreCase))
+            .IsInEnum()
             .WithMessage("Geçersiz fatura türü.");
 
         // ✅ Branch Tutarlılık Kontrolü: Contact aynı şubeye ait olmalı

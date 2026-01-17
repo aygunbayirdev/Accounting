@@ -12,8 +12,8 @@ public record UpdateExpenseListCommand(
 ) : IRequest<ExpenseListDetailDto>;
 
 public record UpdateExpenseLineDto(
-    int? Id,  // null = yeni line, dolu = update existing
-    string DateUtc,
+    int? Id,
+    DateTime DateUtc,
     int? SupplierId,
     string Currency,
     string Amount,

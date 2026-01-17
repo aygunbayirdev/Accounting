@@ -54,22 +54,17 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
         _db.Entry(p).Property(nameof(Payment.RowVersion)).OriginalValue = rv;
 
         // 4) Normalize/map
-        if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture,
-                               DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
-            throw new FluentValidation.ValidationException("DateUtc is invalid or not in UTC format.");
-
         if (!Money.TryParse2(req.Amount, out var amount))
             throw new BusinessRuleException("Amount format is invalid.");
 
-        // Currency Normalization & Validation (merkezi)
         var currency = CommonValidationRules.NormalizeAndValidateCurrency(req.Currency);
 
         p.AccountId = req.AccountId;
         p.ContactId = req.ContactId;
         p.LinkedInvoiceId = req.LinkedInvoiceId;
-        p.DateUtc = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+        p.DateUtc = DateTime.SpecifyKind(req.DateUtc, DateTimeKind.Utc);
         p.Direction = req.Direction;
-        p.Amount = amount; // decimal(18,2) — Money.TryParse2 + policy
+        p.Amount = amount;
         p.Currency = currency;
         p.Description = req.Description?.Trim();
 

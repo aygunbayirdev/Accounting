@@ -1,17 +1,18 @@
 using Accounting.Domain.Entities;
+using Accounting.Domain.Enums;
 using MediatR;
 
 namespace Accounting.Application.Invoices.Commands.Create;
 
 public record CreateInvoiceCommand(
     int ContactId,
-    string DateUtc,
+    DateTime DateUtc,
     string Currency,
     List<CreateInvoiceLineDto> Lines,
-    string Type, // "Sales", "Purchase" vb.
+    InvoiceType Type,
     string? WaybillNumber,
-    string? WaybillDateUtc,
-    string? PaymentDueDateUtc
+    DateTime? WaybillDateUtc,
+    DateTime? PaymentDueDateUtc
 ) : IRequest<CreateInvoiceResult>;
 
 public record CreateInvoiceResult(

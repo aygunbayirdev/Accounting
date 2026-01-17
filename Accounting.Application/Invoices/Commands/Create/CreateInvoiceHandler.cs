@@ -33,29 +33,18 @@ public class CreateInvoiceHandler
     {
         var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException("Branch context missing");
 
-        // 1) Parse DateUtc
-        if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var dateUtc))
-            throw new ArgumentException("DateUtc is invalid.");
-        dateUtc = DateTime.SpecifyKind(dateUtc, DateTimeKind.Utc);
-
-        // 1.1) Parse Waybill Date & Due Date
-        DateTime? waybillDate = null;
-        if (!string.IsNullOrWhiteSpace(req.WaybillDateUtc))
-        {
-            if (DateTime.TryParse(req.WaybillDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var wbDate))
-                waybillDate = DateTime.SpecifyKind(wbDate, DateTimeKind.Utc);
-        }
-
-        DateTime? dueDate = null;
-        if (!string.IsNullOrWhiteSpace(req.PaymentDueDateUtc))
-        {
-            if (DateTime.TryParse(req.PaymentDueDateUtc, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var ddDate))
-                dueDate = DateTime.SpecifyKind(ddDate, DateTimeKind.Utc);
-        }
+        // 1) DateTime'lar .NET tarafından otomatik parse edildi, sadece UTC olduğundan emin ol
+        var dateUtc = DateTime.SpecifyKind(req.DateUtc, DateTimeKind.Utc);
+        var waybillDate = req.WaybillDateUtc.HasValue
+            ? DateTime.SpecifyKind(req.WaybillDateUtc.Value, DateTimeKind.Utc)
+            : (DateTime?)null;
+        var dueDate = req.PaymentDueDateUtc.HasValue
+            ? DateTime.SpecifyKind(req.PaymentDueDateUtc.Value, DateTimeKind.Utc)
+            : (DateTime?)null;
 
         // 2) Normalize
         var currency = (req.Currency ?? "TRY").ToUpperInvariant();
-        var invType = NormalizeType(req.Type, InvoiceType.Sales);
+        var invType = req.Type;
 
         // 3) Validate Items/Expenses (Fetch Map)
         Dictionary<int, dynamic>? itemsMap = null;
@@ -72,7 +61,7 @@ public class CreateInvoiceHandler
         else
         {
             var itemIds = req.Lines.Where(x => x.ItemId.HasValue).Select(l => l.ItemId!.Value).Distinct().ToList();
-            
+
             // Stock Validation (Batch - Performance optimized)
             if (invType == InvoiceType.Sales)
             {
@@ -121,7 +110,7 @@ public class CreateInvoiceHandler
             // Parse Decimals
             if (!decimal.TryParse(lineDto.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty)) throw new ArgumentException("Qty invalid");
             if (!decimal.TryParse(lineDto.UnitPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var unitPrice)) throw new ArgumentException("Price invalid");
-            
+
             decimal discountRate = 0;
             if (!string.IsNullOrWhiteSpace(lineDto.DiscountRate))
                 decimal.TryParse(lineDto.DiscountRate, NumberStyles.Number, CultureInfo.InvariantCulture, out discountRate);
@@ -131,7 +120,7 @@ public class CreateInvoiceHandler
             // Normalize
             qty = Money.R3(Math.Abs(qty)); // Always positive stored
             unitPrice = Money.R4(unitPrice);
-            
+
             // -- CALCULATIONS --
             // 1. Gross (Brüt) = Qty * Price
             var gross = Money.R2(qty * unitPrice);
@@ -149,7 +138,7 @@ public class CreateInvoiceHandler
             var withholdingAmount = Money.R2(vatAmount * withholdingRate / 100m);
 
             // 6. Grand Total (Line) -> Net + Vat
-            var lineGrandTotal = net + vatAmount; 
+            var lineGrandTotal = net + vatAmount;
 
             // Create Entity
             var lineEntity = new InvoiceLine
@@ -170,21 +159,21 @@ public class CreateInvoiceHandler
             // Map Details
             if (invType == InvoiceType.Expense)
             {
-                 if (!lineDto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("ExpenseDefinitionId required");
-                 if (expensesMap == null || !expensesMap.TryGetValue(lineDto.ExpenseDefinitionId.Value, out var exp)) throw new BusinessRuleException("Expense not found");
-                 lineEntity.ExpenseDefinitionId = lineDto.ExpenseDefinitionId;
-                 lineEntity.ItemCode = exp.Code;
-                 lineEntity.ItemName = exp.Name;
-                 lineEntity.Unit = "adet";
+                if (!lineDto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("ExpenseDefinitionId required");
+                if (expensesMap == null || !expensesMap.TryGetValue(lineDto.ExpenseDefinitionId.Value, out var exp)) throw new BusinessRuleException("Expense not found");
+                lineEntity.ExpenseDefinitionId = lineDto.ExpenseDefinitionId;
+                lineEntity.ItemCode = exp.Code;
+                lineEntity.ItemName = exp.Name;
+                lineEntity.Unit = "adet";
             }
             else
             {
-                 if (!lineDto.ItemId.HasValue) throw new BusinessRuleException("ItemId required");
-                 if (itemsMap == null || !itemsMap.TryGetValue(lineDto.ItemId.Value, out var it)) throw new BusinessRuleException("Item not found");
-                 lineEntity.ItemId = lineDto.ItemId;
-                 lineEntity.ItemCode = it.Code;
-                 lineEntity.ItemName = it.Name;
-                 lineEntity.Unit = it.Unit;
+                if (!lineDto.ItemId.HasValue) throw new BusinessRuleException("ItemId required");
+                if (itemsMap == null || !itemsMap.TryGetValue(lineDto.ItemId.Value, out var it)) throw new BusinessRuleException("Item not found");
+                lineEntity.ItemId = lineDto.ItemId;
+                lineEntity.ItemCode = it.Code;
+                lineEntity.ItemName = it.Name;
+                lineEntity.Unit = it.Unit;
             }
 
             invoice.Lines.Add(lineEntity);
@@ -278,7 +267,7 @@ public class CreateInvoiceHandler
             // Check ItemType - Skip if NOT Inventory
             if (itemsMap != null && itemsMap.TryGetValue(line.ItemId.Value, out var it))
             {
-                 if ((ItemType)it.type != ItemType.Inventory) continue;
+                if ((ItemType)it.type != ItemType.Inventory) continue;
             }
 
             // Qty işareti: InvoiceLine.Qty'de iadelerde negatif tutuyorduk (finansal).

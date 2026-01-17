@@ -27,17 +27,11 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
 
     public async Task<CreatePaymentResult> Handle(CreatePaymentCommand req, CancellationToken ct)
     {
-        if (!DateTime.TryParse(req.DateUtc, CultureInfo.InvariantCulture,
-                               DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                               out var parsed))
-            throw new FluentValidation.ValidationException("DateUtc is invalid or not in UTC format.");
-
         // Amount Parse
         if (!Money.TryParse2(req.Amount, out var amount))
             throw new FluentValidation.ValidationException("Amount is invalid.");
 
-        // Currency Normalization & Validation (merkezi)
-        // Currency Normalization & Validation (merkezi)
+        // Currency Normalization & Validation
         var currency = CommonValidationRules.NormalizeAndValidateCurrency(req.Currency);
 
         var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException();
@@ -48,9 +42,9 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
             AccountId = req.AccountId,
             ContactId = req.ContactId,
             LinkedInvoiceId = req.LinkedInvoiceId,
-            DateUtc = DateTime.SpecifyKind(parsed, DateTimeKind.Utc),
+            DateUtc = DateTime.SpecifyKind(req.DateUtc, DateTimeKind.Utc),
             Direction = req.Direction,
-            Amount = amount,  // decimal(18,2) DB
+            Amount = amount,
             Currency = currency,
             Description = req.Description?.Trim()
         };

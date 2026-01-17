@@ -1,4 +1,3 @@
-using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
 
@@ -8,7 +7,7 @@ public record CreatePaymentCommand(
     int AccountId,
     int? ContactId,
     int? LinkedInvoiceId,
-    string DateUtc,
+    DateTime DateUtc,
     PaymentDirection Direction,
     string Amount,
     string Currency,

@@ -12,17 +12,8 @@ public class PostExpenseListToBillValidator : AbstractValidator<PostExpenseListT
         RuleFor(x => x.ItemId).GreaterThan(0);
         RuleFor(x => x.Currency).MustBeValidCurrency();
 
-        // DateUtc null olabilir ama dolu ise geçerli olmalı
-        When(x => !string.IsNullOrWhiteSpace(x.DateUtc), () =>
-        {
-            RuleFor(x => x.DateUtc).MustBeValidUtcDateTime();
-        });
-
-        // PaymentDateUtc null olabilir ama dolu ise geçerli olmalı
-        When(x => !string.IsNullOrWhiteSpace(x.PaymentDateUtc), () =>
-        {
-            RuleFor(x => x.PaymentDateUtc).MustBeValidUtcDateTime();
-        });
+        // DateUtc ve PaymentDateUtc DateTime? oldu - .NET otomatik parse ediyor
+        // Artık string validation gerekmez
 
         // ✅ CreatePayment=true ise PaymentAccountId zorunlu
         When(x => x.CreatePayment, () =>

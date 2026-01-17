@@ -28,7 +28,7 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
         // ✅ CommonValidationRules kullan
         RuleFor(x => x.Currency).MustBeValidCurrency();
         RuleFor(x => x.Amount).MustBeValidMoneyAmount();
-        RuleFor(x => x.DateUtc).MustBeValidUtcDateTime();
+        RuleFor(x => x.DateUtc).NotEmpty().WithMessage("DateUtc gereklidir.");
 
         // ✅ YENİ: LinkedInvoiceId Validasyonu
         When(x => x.LinkedInvoiceId.HasValue, () =>
@@ -88,7 +88,7 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
             .Where(a => a.Id == accountId && !a.IsDeleted)
             .Select(a => new { a.BranchId })
             .FirstOrDefaultAsync(ct);
-        
+
         return account != null && account.BranchId == currentBranchId;
     }
 
@@ -102,7 +102,7 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
             .Where(i => i.Id == invoiceId && !i.IsDeleted)
             .Select(i => new { i.BranchId })
             .FirstOrDefaultAsync(ct);
-        
+
         return invoice != null && invoice.BranchId == currentBranchId;
     }
 }

@@ -22,6 +22,25 @@ This document defines the coding standards, architectural patterns, and best pra
   ```
 - **Implicit Usings**: Enabled. Avoid cluttering files with common System imports.
 - **DTOs**: Use `record` types for DTOs. Immutable by default.
+- **DTO Type Rules**:
+  - Use **native types** (`DateTime`, `DateTime?`, `enum`) in Command/Query DTOs.
+  - .NET model binding handles JSON ↔ DateTime/Enum conversion automatically.
+  - **DO NOT** use string for dates or enums in DTOs - no manual parsing needed.
+  - Money values remain `string` (e.g., "1250.00") for precision control.
+  ```csharp
+  // ✅ CORRECT
+  public record CreateInvoiceCommand(
+      DateTime DateUtc,
+      InvoiceType Type,
+      string Amount  // Money stays string
+  );
+  
+  // ❌ WRONG - Don't use string for dates/enums
+  public record CreateInvoiceCommand(
+      string DateUtc,  // BAD
+      string Type      // BAD
+  );
+  ```
 
 ## 3. Domain Patterns
 - **Money Value Object**:
