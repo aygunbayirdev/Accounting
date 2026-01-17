@@ -1,4 +1,7 @@
-﻿namespace Accounting.Application.ExpenseLists.Dto;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.ExpenseLists.Dto;
 
 // List için basit DTO
 public record ExpenseListDto(
@@ -16,7 +19,10 @@ public record ExpenseLineDto(
     DateTime DateUtc,
     int? SupplierId,
     string Currency,
-    string Amount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Amount,
+
     int VatRate,
     string? Category,
     string? Notes
@@ -29,7 +35,10 @@ public record ExpenseListDetailDto(
     string Name,
     string Status,
     IReadOnlyList<ExpenseLineDto> Lines,
-    string TotalAmount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalAmount,
+
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc,
     string RowVersion

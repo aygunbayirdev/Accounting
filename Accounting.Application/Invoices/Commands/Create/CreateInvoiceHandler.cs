@@ -66,11 +66,11 @@ public class CreateInvoiceHandler
             if (invType == InvoiceType.Sales)
             {
                 var stockRequirements = req.Lines
-                    .Where(l => l.ItemId.HasValue && decimal.TryParse(l.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+                    .Where(l => l.ItemId.HasValue)
                     .GroupBy(l => l.ItemId!.Value)
                     .ToDictionary(
                         g => g.Key,
-                        g => g.Sum(l => decimal.TryParse(l.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var q) ? Math.Abs(q) : 0m)
+                        g => g.Sum(l => l.Qty)
                     );
 
                 if (stockRequirements.Any())
@@ -108,34 +108,28 @@ public class CreateInvoiceHandler
         foreach (var lineDto in req.Lines)
         {
             // Parse Decimals
-            if (!decimal.TryParse(lineDto.Qty, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty)) throw new ArgumentException("Qty invalid");
-            if (!decimal.TryParse(lineDto.UnitPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var unitPrice)) throw new ArgumentException("Price invalid");
-
-            decimal discountRate = 0;
-            if (!string.IsNullOrWhiteSpace(lineDto.DiscountRate))
-                decimal.TryParse(lineDto.DiscountRate, NumberStyles.Number, CultureInfo.InvariantCulture, out discountRate);
-
+            decimal discountRate = lineDto.DiscountRate ?? 0;
             int withholdingRate = lineDto.WithholdingRate ?? 0;
 
             // Normalize
-            qty = Money.R3(Math.Abs(qty)); // Always positive stored
-            unitPrice = Money.R4(unitPrice);
+            var qty = DecimalExtensions.RoundQuantity(Math.Abs(lineDto.Qty)); // Always positive stored
+            var unitPrice = DecimalExtensions.RoundUnitPrice(lineDto.UnitPrice);
 
             // -- CALCULATIONS --
             // 1. Gross (Brüt) = Qty * Price
-            var gross = Money.R2(qty * unitPrice);
+            var gross = DecimalExtensions.RoundAmount(qty * unitPrice);
 
             // 2. Discount Amount
-            var discountAmount = Money.R2(gross * discountRate / 100m);
+            var discountAmount = DecimalExtensions.RoundAmount(gross * discountRate / 100m);
 
             // 3. Net (Matrah)
             var net = gross - discountAmount;
 
             // 4. VAT
-            var vatAmount = Money.R2(net * lineDto.VatRate / 100m);
+            var vatAmount = DecimalExtensions.RoundAmount(net * lineDto.VatRate / 100m);
 
             // 5. Withholding
-            var withholdingAmount = Money.R2(vatAmount * withholdingRate / 100m);
+            var withholdingAmount = DecimalExtensions.RoundAmount(vatAmount * withholdingRate / 100m);
 
             // 6. Grand Total (Line) -> Net + Vat
             var lineGrandTotal = net + vatAmount;
@@ -208,9 +202,9 @@ public class CreateInvoiceHandler
 
         return new CreateInvoiceResult(
             Id: invoice.Id,
-            TotalNet: Money.S2(invoice.TotalNet),
-            TotalVat: Money.S2(invoice.TotalVat),
-            TotalGross: Money.S2(invoice.TotalGross),
+            TotalNet: invoice.TotalNet,
+            TotalVat: invoice.TotalVat,
+            TotalGross: invoice.TotalGross,
             RoundingPolicy: "AwayFromZero"
         );
     }
@@ -283,7 +277,7 @@ public class CreateInvoiceHandler
                 WarehouseId: defaultWarehouse.Id, // ✅ Dinamik warehouse
                 ItemId: line.ItemId!.Value,
                 Type: movementType.Value,
-                Quantity: Money.S3(absQty), // String format
+                Quantity: absQty,
                 TransactionDateUtc: invoice.DateUtc,
                 Note: null,
                 InvoiceId: invoice.Id // FK ile ilişkilendirme

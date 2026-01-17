@@ -38,7 +38,7 @@ public class GetPaymentByIdHandler : IRequestHandler<GetPaymentByIdQuery, Paymen
             p.LinkedInvoiceId,
             p.DateUtc,
             p.Direction.ToString(),
-            Money.S2(p.Amount),
+            p.Amount,
             p.Currency,
             p.Description,
             Convert.ToBase64String(p.RowVersion),

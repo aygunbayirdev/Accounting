@@ -54,8 +54,6 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
         _db.Entry(p).Property(nameof(Payment.RowVersion)).OriginalValue = rv;
 
         // 4) Normalize/map
-        if (!Money.TryParse2(req.Amount, out var amount))
-            throw new BusinessRuleException("Amount format is invalid.");
 
         var currency = CommonValidationRules.NormalizeAndValidateCurrency(req.Currency);
 
@@ -64,7 +62,7 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
         p.LinkedInvoiceId = req.LinkedInvoiceId;
         p.DateUtc = DateTime.SpecifyKind(req.DateUtc, DateTimeKind.Utc);
         p.Direction = req.Direction;
-        p.Amount = amount;
+        p.Amount = req.Amount;
         p.Currency = currency;
         p.Description = req.Description?.Trim();
 
@@ -130,7 +128,7 @@ public class UpdatePaymentHandler : IRequestHandler<UpdatePaymentCommand, Paymen
             fresh.LinkedInvoiceId,
             fresh.DateUtc,
             fresh.Direction.ToString(),
-            Money.S2(fresh.Amount),
+            fresh.Amount,
             fresh.Currency,
             fresh.Description,
             Convert.ToBase64String(fresh.RowVersion),

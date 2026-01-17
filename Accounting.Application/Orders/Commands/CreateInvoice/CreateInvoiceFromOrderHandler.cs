@@ -11,7 +11,7 @@ using Accounting.Application.Common.Interfaces;
 
 namespace Accounting.Application.Orders.Commands.CreateInvoice;
 
-public record CreateInvoiceFromOrderCommand(int OrderId) : IRequest<int>;
+
 
 public class CreateInvoiceFromOrderHandler : IRequestHandler<CreateInvoiceFromOrderCommand, int>
 {
@@ -67,8 +67,8 @@ public class CreateInvoiceFromOrderHandler : IRequestHandler<CreateInvoiceFromOr
                 UnitPrice = ol.UnitPrice,
                 VatRate = ol.VatRate,
                 Net = ol.Total,
-                Vat = Money.R2(ol.Total * ol.VatRate / 100m),
-                Gross = Money.R2(ol.Total + (ol.Total * ol.VatRate / 100m))
+                Vat = DecimalExtensions.RoundAmount(ol.Total * ol.VatRate / 100m),
+                Gross = DecimalExtensions.RoundAmount(ol.Total + (ol.Total * ol.VatRate / 100m))
             });
         }
 
@@ -164,8 +164,8 @@ public class CreateInvoiceFromOrderHandler : IRequestHandler<CreateInvoiceFromOr
             }
 
             stock.Quantity = isOutgoing
-                ? Money.R3(stock.Quantity - line.Qty)
-                : Money.R3(stock.Quantity + line.Qty);
+                ? DecimalExtensions.RoundQuantity(stock.Quantity - line.Qty)
+                : DecimalExtensions.RoundQuantity(stock.Quantity + line.Qty);
         }
     }
 }

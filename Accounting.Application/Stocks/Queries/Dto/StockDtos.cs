@@ -1,4 +1,7 @@
-﻿namespace Accounting.Application.Stocks.Queries.Dto;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.Stocks.Queries.Dto;
 
 public record StockDtos(
     int Id,
@@ -10,7 +13,10 @@ public record StockDtos(
     string ItemCode,
     string ItemName,
     string Unit,
-    string Quantity,
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Quantity,
+
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
@@ -25,7 +31,7 @@ public record StockListItemDto(
     string ItemCode,
     string ItemName,
     string Unit,
-    string Quantity,
+    decimal Quantity,
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
@@ -41,7 +47,7 @@ public record StockDetailDto(
     string ItemCode,
     string ItemName,
     string Unit,
-    string Quantity,
+    decimal Quantity,
     string RowVersion,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc

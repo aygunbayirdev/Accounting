@@ -11,8 +11,8 @@ public static class InvoiceCalculator
 
         foreach (var l in invoice.Lines)
         {
-            var net = Money.R2(l.Qty * l.UnitPrice);
-            var vat = Money.R2(net * l.VatRate / 100m);
+            var net = DecimalExtensions.RoundAmount(l.Qty * l.UnitPrice);
+            var vat = DecimalExtensions.RoundAmount(net * l.VatRate / 100m);
             var gross = net + vat;
 
             l.Net = net; l.Vat = vat; l.Gross = gross;
@@ -20,8 +20,8 @@ public static class InvoiceCalculator
             tNet += net; tVat += vat;
         }
 
-        invoice.TotalNet = Money.R2(tNet);
-        invoice.TotalVat = Money.R2(tVat);
+        invoice.TotalNet = DecimalExtensions.RoundAmount(tNet);
+        invoice.TotalVat = DecimalExtensions.RoundAmount(tVat);
         invoice.TotalGross = invoice.TotalNet + invoice.TotalVat;
 
         return (invoice.TotalNet, invoice.TotalVat, invoice.TotalGross);

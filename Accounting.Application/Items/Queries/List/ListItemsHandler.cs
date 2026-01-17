@@ -73,8 +73,8 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
                                x.Unit,
                                x.VatRate,
                                x.DefaultWithholdingRate ?? 0,
-                               x.PurchasePrice == null ? null : Money.S2(x.PurchasePrice.Value),
-                               x.SalesPrice == null ? null : Money.S2(x.SalesPrice.Value),
+                               x.PurchasePrice == null ? null : x.PurchasePrice.Value,
+                               x.SalesPrice == null ? null : x.SalesPrice.Value,
                                x.CreatedAtUtc))
                            .ToListAsync(ct);
 

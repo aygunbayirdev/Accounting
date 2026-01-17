@@ -1,11 +1,21 @@
-﻿namespace Accounting.Application.Invoices.Commands.Create;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.Invoices.Commands.Create;
 
 public record CreateInvoiceLineDto(
     int? ItemId,
     int? ExpenseDefinitionId,
-    string Qty,        // <-- string (3 hane)
-    string UnitPrice,  // <-- string (4 hane)
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Qty,
+
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
+    decimal UnitPrice,
+
     int VatRate,
-    string? DiscountRate, // <-- string (2 hane) %10.5
-    int? WithholdingRate // 0..100
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
+    decimal? DiscountRate,
+    int? WithholdingRate
 );

@@ -105,15 +105,15 @@ namespace Accounting.Application.Payments.Queries.List
                 p.LinkedInvoiceId,
                 p.DateUtc,
                 p.Direction.ToString(),
-                Money.S2(p.Amount),
+                p.Amount,
                 p.Currency,
                 p.Description,
                 p.CreatedAtUtc
             )).ToList();
 
             var totals = new PagedTotals(
-                PageTotalAmount: Money.S2(pageSum),
-                FilteredTotalAmount: Money.S2(filteredSum)
+                PageTotalAmount: pageSum,
+                FilteredTotalAmount: filteredSum
             );
 
             return new PagedResult<PaymentListItemDto>(total, q.PageNumber, q.PageSize, items, totals);

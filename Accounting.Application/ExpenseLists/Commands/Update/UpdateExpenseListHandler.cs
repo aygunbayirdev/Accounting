@@ -76,9 +76,6 @@ public class UpdateExpenseListHandler : IRequestHandler<UpdateExpenseListCommand
         // 4. Yeni ve güncellenecek line'lar
         foreach (var lineDto in req.Lines)
         {
-            if (!Money.TryParse2(lineDto.Amount, out var amount))
-                throw new FluentValidation.ValidationException("Amount is invalid.");
-
             var dateUtc = DateTime.SpecifyKind(lineDto.DateUtc, DateTimeKind.Utc);
 
             if (lineDto.Id.HasValue)
@@ -91,7 +88,7 @@ public class UpdateExpenseListHandler : IRequestHandler<UpdateExpenseListCommand
                 existingLine.DateUtc = dateUtc;
                 existingLine.SupplierId = lineDto.SupplierId;
                 existingLine.Currency = lineDto.Currency.ToUpperInvariant();
-                existingLine.Amount = amount;
+                existingLine.Amount = lineDto.Amount;
                 existingLine.VatRate = lineDto.VatRate;
                 existingLine.Category = lineDto.Category?.Trim();
                 existingLine.Notes = lineDto.Notes?.Trim();
@@ -106,7 +103,7 @@ public class UpdateExpenseListHandler : IRequestHandler<UpdateExpenseListCommand
                     DateUtc = dateUtc,
                     SupplierId = lineDto.SupplierId,
                     Currency = lineDto.Currency.ToUpperInvariant(),
-                    Amount = amount,
+                    Amount = lineDto.Amount,
                     VatRate = lineDto.VatRate,
                     Category = lineDto.Category?.Trim(),
                     Notes = lineDto.Notes?.Trim(),
@@ -145,12 +142,12 @@ public class UpdateExpenseListHandler : IRequestHandler<UpdateExpenseListCommand
                 DateUtc: l.DateUtc,
                 SupplierId: l.SupplierId,
                 Currency: l.Currency,
-                Amount: Money.S2(l.Amount),
+                Amount: l.Amount,
                 VatRate: l.VatRate,
                 Category: l.Category,
                 Notes: l.Notes
             )).ToList(),
-            TotalAmount: Money.S2(fresh.Lines.Sum(l => l.Amount)),
+            TotalAmount: fresh.Lines.Sum(l => l.Amount),
             CreatedAtUtc: fresh.CreatedAtUtc,
             UpdatedAtUtc: fresh.UpdatedAtUtc,
             RowVersion: Convert.ToBase64String(fresh.RowVersion)

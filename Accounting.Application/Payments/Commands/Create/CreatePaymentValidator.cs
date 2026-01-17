@@ -25,12 +25,11 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
 
         RuleFor(x => x.Direction).IsInEnum();
 
-        // ✅ CommonValidationRules kullan
+        // CommonValidationRules
         RuleFor(x => x.Currency).MustBeValidCurrency();
-        RuleFor(x => x.Amount).MustBeValidMoneyAmount();
         RuleFor(x => x.DateUtc).NotEmpty().WithMessage("DateUtc gereklidir.");
 
-        // ✅ YENİ: LinkedInvoiceId Validasyonu
+        // LinkedInvoiceId validation
         When(x => x.LinkedInvoiceId.HasValue, () =>
         {
             // 1. Invoice exist check & Branch Check
@@ -61,7 +60,6 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
             RuleFor(x => x)
                 .MustAsync(async (cmd, ct) =>
                 {
-                    if (!Money.TryParse2(cmd.Amount, out var amount)) return true;
                     if (!cmd.LinkedInvoiceId.HasValue) return true;
 
                     var invoice = await _db.Invoices
@@ -72,7 +70,7 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
 
                     if (invoice == null) return true;
 
-                    return amount <= invoice.Balance;
+                    return cmd.Amount <= invoice.Balance;
                 })
                 .WithMessage("Payment amount exceeds invoice balance.");
         });

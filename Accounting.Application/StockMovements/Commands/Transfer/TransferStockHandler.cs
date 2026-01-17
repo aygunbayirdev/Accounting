@@ -16,10 +16,8 @@ public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferSt
         if (r.SourceWarehouseId == r.TargetWarehouseId)
             throw new BusinessRuleException("Kaynak ve hedef depo aynı olamaz.");
 
-        if (!Money.TryParse4(r.Quantity, out var parsed))
-            throw new BusinessRuleException("Geçersiz miktar formatı.");
 
-        var qty = Money.R3(parsed);
+        var qty = DecimalExtensions.RoundQuantity(r.Quantity);
         if (qty <= 0)
             throw new BusinessRuleException("Transfer miktarı 0'dan büyük olmalı.");
 
@@ -77,8 +75,8 @@ public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferSt
         // Ideally we use database constraints or strict optimistic concurrency.
         // For MVP, standard EF Core handling.
 
-        sourceStock.Quantity = Money.R3(sourceStock.Quantity - qty);
-        targetStock.Quantity = Money.R3(targetStock.Quantity + qty);
+        sourceStock.Quantity = DecimalExtensions.RoundQuantity(sourceStock.Quantity - qty);
+        targetStock.Quantity = DecimalExtensions.RoundQuantity(targetStock.Quantity + qty);
 
         // 8. Create Movements
         var now = r.TransactionDateUtc == default ? DateTime.UtcNow : r.TransactionDateUtc;

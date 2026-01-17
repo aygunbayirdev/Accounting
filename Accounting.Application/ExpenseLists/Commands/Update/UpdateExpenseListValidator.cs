@@ -33,7 +33,6 @@ public class UpdateExpenseLineDtoValidator : AbstractValidator<UpdateExpenseLine
 
         RuleFor(x => x.DateUtc).NotEmpty().WithMessage("DateUtc gereklidir.");
         RuleFor(x => x.Currency).MustBeValidCurrency();
-        RuleFor(x => x.Amount).MustBeValidMoneyAmount();
         RuleFor(x => x.VatRate).InclusiveBetween(0, 100);
     }
 }

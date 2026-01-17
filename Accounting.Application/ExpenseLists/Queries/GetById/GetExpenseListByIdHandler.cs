@@ -39,7 +39,7 @@ public class GetExpenseListByIdHandler : IRequestHandler<GetExpenseListByIdQuery
                 DateUtc: l.DateUtc,
                 SupplierId: l.SupplierId,
                 Currency: l.Currency,
-                Amount: Money.S2(l.Amount),
+                Amount: l.Amount,
                 VatRate: l.VatRate,
                 Category: l.Category,
                 Notes: l.Notes
@@ -54,7 +54,7 @@ public class GetExpenseListByIdHandler : IRequestHandler<GetExpenseListByIdQuery
             Name: list.Name,
             Status: list.Status.ToString(),
             Lines: lineDtos,
-            TotalAmount: Money.S2(total),
+            TotalAmount: total,
             CreatedAtUtc: list.CreatedAtUtc,
             UpdatedAtUtc: list.UpdatedAtUtc,
             RowVersion: Convert.ToBase64String(list.RowVersion)

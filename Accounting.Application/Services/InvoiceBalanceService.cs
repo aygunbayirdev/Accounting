@@ -57,7 +57,7 @@ public class InvoiceBalanceService : IInvoiceBalanceService
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
         var payable = invoice.TotalGross - invoice.TotalWithholding;
-        var balance = Money.R2(payable - totalPayments);
+        var balance = DecimalExtensions.RoundAmount(payable - totalPayments);
 
         return balance;
     }
@@ -116,7 +116,7 @@ public class InvoiceBalanceService : IInvoiceBalanceService
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
         var payable = invoice.TotalGross - invoice.TotalWithholding;
-        var balance = Money.R2(payable - totalPayments);
+        var balance = DecimalExtensions.RoundAmount(payable - totalPayments);
         invoice.Balance = balance;
 
         // RowVersion otomatik olarak concurrency check yapacak

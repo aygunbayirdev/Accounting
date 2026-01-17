@@ -1,4 +1,6 @@
+using Accounting.Application.Common.JsonConverters;
 using Accounting.Domain.Enums;
+using System.Text.Json.Serialization;
 
 namespace Accounting.Application.Orders.Dto;
 
@@ -10,9 +12,16 @@ public record OrderDto(
     string ContactName,
     DateTime DateUtc,
     OrderStatus Status,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalNet,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalVat,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal TotalGross,
+
     string Currency,
     string? Description,
     List<OrderLineDto> Lines,
@@ -25,8 +34,13 @@ public record OrderLineDto(
     int? ItemId,
     string? ItemName,
     string Description,
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Quantity,
+
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
     decimal UnitPrice,
+
     int VatRate,
     decimal Total
 );

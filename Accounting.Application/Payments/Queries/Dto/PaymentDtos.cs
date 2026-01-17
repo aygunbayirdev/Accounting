@@ -1,4 +1,7 @@
-﻿namespace Accounting.Application.Payments.Queries.Dto;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.Payments.Queries.Dto;
 
 public record PaymentListItemDto(
     int Id,
@@ -11,7 +14,10 @@ public record PaymentListItemDto(
     int? LinkedInvoiceId,
     DateTime DateUtc,
     string Direction,
-    string Amount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Amount,
+
     string Currency,
     string? Description,
     DateTime CreatedAtUtc
@@ -24,7 +30,10 @@ public record PaymentDetailDto(
     int? LinkedInvoiceId,
     DateTime DateUtc,
     string Direction,
-    string Amount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Amount,
+
     string Currency,
     string? Description,
     string RowVersion,

@@ -27,15 +27,12 @@ public class CreateExpenseListHandler : IRequestHandler<CreateExpenseListCommand
         // Lines ekle
         foreach (var lineDto in req.Lines)
         {
-            if (!Money.TryParse2(lineDto.Amount, out var amount))
-                throw new FluentValidation.ValidationException("Amount is invalid.");
-
             var line = new ExpenseLine
             {
                 DateUtc = DateTime.SpecifyKind(lineDto.DateUtc, DateTimeKind.Utc),
                 SupplierId = lineDto.SupplierId,
                 Currency = lineDto.Currency.ToUpperInvariant(),
-                Amount = amount,
+                Amount = lineDto.Amount,
                 VatRate = lineDto.VatRate,
                 Category = lineDto.Category?.Trim(),
                 Notes = lineDto.Notes?.Trim(),
@@ -60,12 +57,12 @@ public class CreateExpenseListHandler : IRequestHandler<CreateExpenseListCommand
                 DateUtc: l.DateUtc,
                 SupplierId: l.SupplierId,
                 Currency: l.Currency,
-                Amount: Money.S2(l.Amount),
+                Amount: l.Amount,
                 VatRate: l.VatRate,
                 Category: l.Category,
                 Notes: l.Notes
             )).ToList(),
-            TotalAmount: Money.S2(entity.Lines.Sum(l => l.Amount)),
+            TotalAmount: entity.Lines.Sum(l => l.Amount),
             CreatedAtUtc: entity.CreatedAtUtc,
             UpdatedAtUtc: entity.UpdatedAtUtc,
             RowVersion: Convert.ToBase64String(entity.RowVersion)

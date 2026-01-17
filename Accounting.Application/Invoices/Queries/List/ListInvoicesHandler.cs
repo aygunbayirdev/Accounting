@@ -112,10 +112,10 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
             i.Type.ToString(),
             i.DateUtc,
             i.Currency,
-            Money.S2(i.TotalNet),
-            Money.S2(i.TotalVat),
-            Money.S2(i.TotalGross),
-            Money.S2(i.Balance),
+            i.TotalNet,
+            i.TotalVat,
+            i.TotalGross,
+            i.Balance,
             i.CreatedAtUtc,
             i.BranchId,
             i.BranchCode,
@@ -123,12 +123,12 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
         )).ToList();
 
         var totals = new InvoicePagedTotals(
-            PageTotalNet: Money.S2(pageNet),
-            PageTotalVat: Money.S2(pageVat),
-            PageTotalGross: Money.S2(pageGross),
-            FilteredTotalNet: Money.S2(filteredNet),
-            FilteredTotalVat: Money.S2(filteredVat),
-            FilteredTotalGross: Money.S2(filteredGross)
+            PageTotalNet: pageNet,
+            PageTotalVat: pageVat,
+            PageTotalGross: pageGross,
+            FilteredTotalNet: filteredNet,
+            FilteredTotalVat: filteredVat,
+            FilteredTotalGross: filteredGross
         );
 
         return new PagedResult<InvoiceListItemDto>(total, pageNumber, pageSize, items, totals);

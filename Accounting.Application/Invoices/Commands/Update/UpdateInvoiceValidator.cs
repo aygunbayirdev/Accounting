@@ -109,8 +109,6 @@ namespace Accounting.Application.Invoices.Commands.Update
         {
             RuleFor(l => l.Id).GreaterThanOrEqualTo(0);
             RuleFor(l => l.ItemId).GreaterThan(0).When(l => l.ItemId.HasValue);
-            RuleFor(l => l.Qty).MustBeValidQuantity();        // Extension
-            RuleFor(l => l.UnitPrice).MustBeValidUnitPrice(); // Extension
             RuleFor(l => l.VatRate).InclusiveBetween(0, 100);
         }
     }

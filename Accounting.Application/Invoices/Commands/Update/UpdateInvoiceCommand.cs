@@ -1,6 +1,8 @@
+using Accounting.Application.Common.JsonConverters;
 using Accounting.Application.Invoices.Queries.Dto;
 using Accounting.Domain.Enums;
 using MediatR;
+using System.Text.Json.Serialization;
 
 public sealed record UpdateInvoiceCommand(
     int Id,
@@ -19,9 +21,18 @@ public sealed record UpdateInvoiceLineDto(
     int Id,
     int? ItemId,
     int? ExpenseDefinitionId,
-    string Qty,
-    string UnitPrice,
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Qty,
+
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
+    decimal UnitPrice,
+
     int VatRate,
-    string? DiscountRate,
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
+    decimal? DiscountRate,
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
     int? WithholdingRate
 );

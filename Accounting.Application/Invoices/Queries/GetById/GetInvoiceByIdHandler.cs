@@ -42,17 +42,17 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
                 l.ItemCode,   // snapshot
                 l.ItemName,   // snapshot
                 l.Unit,       // snapshot
-                Money.S3(l.Qty),
-                Money.S4(l.UnitPrice),
+                l.Qty,
+                l.UnitPrice,
                 l.VatRate,
-                Money.S2(l.DiscountRate),   // Added
-                Money.S2(l.DiscountAmount), // Added
-                Money.S2(l.Net),
-                Money.S2(l.Vat),
-                l.WithholdingRate,          // Added
-                Money.S2(l.WithholdingAmount), // Added
-                Money.S2(l.Gross),
-                Money.S2(l.GrandTotal)      // Added
+                l.DiscountRate,
+                l.DiscountAmount,
+                l.Net,
+                l.Vat,
+                l.WithholdingRate,
+                l.WithholdingAmount,
+                l.Gross,
+                l.GrandTotal
             ))
             .ToList();
 
@@ -64,13 +64,13 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             inv.DateUtc,
             inv.InvoiceNumber,
             inv.Currency,
-            Money.S2(inv.TotalLineGross),
-            Money.S2(inv.TotalDiscount),
-            Money.S2(inv.TotalNet),
-            Money.S2(inv.TotalVat),
-            Money.S2(inv.TotalWithholding),
-            Money.S2(inv.TotalGross),
-            Money.S2(inv.Balance),
+            inv.TotalLineGross,
+            inv.TotalDiscount,
+            inv.TotalNet,
+            inv.TotalVat,
+            inv.TotalWithholding,
+            inv.TotalGross,
+            inv.Balance,
             lines,
             Convert.ToBase64String(inv.RowVersion),
             inv.CreatedAtUtc,

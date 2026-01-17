@@ -1,4 +1,7 @@
-﻿namespace Accounting.Application.Items.Queries.Dto;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.Items.Queries.Dto;
 
 public record ItemListItemDto(
     int Id,
@@ -9,9 +12,16 @@ public record ItemListItemDto(
     int Type,                       // ItemType enum (1=Inventory, 2=Service)
     string Unit,
     int VatRate,
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
     int DefaultWithholdingRate,     // Varsayılan tevkifat oranı
-    string? PurchasePrice,          // money string 
-    string? SalesPrice,             // money string
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal? PurchasePrice,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal? SalesPrice,
+
     DateTime CreatedAtUtc
 );
 
@@ -19,15 +29,22 @@ public record ItemDetailDto(
     int Id,
     int? CategoryId,
     string? CategoryName,
-    string Code,                    // Stok kodu
+    string Code,
     string Name,
-    int Type,                       // ItemType enum (1=Inventory, 2=Service)
+    int Type,
     string Unit,
     int VatRate,
-    int DefaultWithholdingRate,     // Varsayılan tevkifat oranı
-    string? PurchasePrice,          // money string
-    string? SalesPrice,             // money string
-    string RowVersion,              // base64
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
+    int DefaultWithholdingRate,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal? PurchasePrice,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal? SalesPrice,
+
+    string RowVersion, // base64
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
 );

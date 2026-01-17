@@ -71,8 +71,8 @@ public class PostExpenseListToBillHandler
         var lines = list.Lines.Select(l => new CreateInvoiceLineDto(
             ItemId: req.ItemId,
             ExpenseDefinitionId: null,
-            Qty: "1.000",
-            UnitPrice: Money.S2(l.Amount),
+            Qty: 1.000m,
+            UnitPrice: l.Amount,
             VatRate: l.VatRate,
             DiscountRate: null,
             WithholdingRate: null

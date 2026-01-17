@@ -23,14 +23,7 @@ public class TransferStockValidator : AbstractValidator<TransferStockCommand>
 
         RuleFor(x => x.ItemId)
             .GreaterThan(0)
-            .MustAsync(ItemExistsAsync).WithMessage("Ürün bulunamadı.");
-
-        RuleFor(x => x.Quantity)
-            .NotEmpty()
-            .Must(q => decimal.TryParse(q.Replace(",", "."),
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out var val) && val > 0)
-            .WithMessage("Miktar sıfırdan büyük olmalıdır.");
+            .MustAsync(ItemExistsAsync).WithMessage("Ürün bulunamadı.");    
 
         RuleFor(x => x.TransactionDateUtc)
             .NotEmpty();

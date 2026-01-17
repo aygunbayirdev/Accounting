@@ -53,8 +53,6 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
             line.RuleFor(l => l.ItemId)
                 .GreaterThan(0)
                 .When(l => l.ItemId.HasValue);
-            line.RuleFor(l => l.Qty).MustBeValidQuantity();        // Extension
-            line.RuleFor(l => l.UnitPrice).MustBeValidUnitPrice(); // Extension
 
             line.RuleFor(l => l.VatRate)
                 .InclusiveBetween(0, 100);

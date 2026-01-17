@@ -113,12 +113,12 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         // RE-SUM from active lines
         var activeLines = inv.Lines.Where(l => !l.IsDeleted).ToList();
-        inv.TotalLineGross = Money.R2(activeLines.Sum(x => x.Gross));
-        inv.TotalDiscount = Money.R2(activeLines.Sum(x => x.DiscountAmount));
-        inv.TotalNet = Money.R2(activeLines.Sum(x => x.Net));
-        inv.TotalVat = Money.R2(activeLines.Sum(x => x.Vat));
-        inv.TotalWithholding = Money.R2(activeLines.Sum(x => x.WithholdingAmount));
-        inv.TotalGross = Money.R2(inv.TotalNet + inv.TotalVat);
+        inv.TotalLineGross = DecimalExtensions.RoundAmount(activeLines.Sum(x => x.Gross));
+        inv.TotalDiscount = DecimalExtensions.RoundAmount(activeLines.Sum(x => x.DiscountAmount));
+        inv.TotalNet = DecimalExtensions.RoundAmount(activeLines.Sum(x => x.Net));
+        inv.TotalVat = DecimalExtensions.RoundAmount(activeLines.Sum(x => x.Vat));
+        inv.TotalWithholding = DecimalExtensions.RoundAmount(activeLines.Sum(x => x.WithholdingAmount));
+        inv.TotalGross = DecimalExtensions.RoundAmount(inv.TotalNet + inv.TotalVat);
 
         // Balance Update
         inv.Balance = inv.TotalGross - inv.TotalWithholding;
@@ -165,21 +165,21 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             .Select(l => new InvoiceLineDto(
                 l.Id,
                 l.ItemId,
-                l.ExpenseDefinitionId, // Added new field
+                l.ExpenseDefinitionId,
                 l.ItemCode,
                 l.ItemName,
                 l.Unit,
-                Money.S3(l.Qty),
-                Money.S4(l.UnitPrice),
+                l.Qty,
+                l.UnitPrice,
                 l.VatRate,
-                Money.S2(l.DiscountRate), // Added
-                Money.S2(l.DiscountAmount), // Added
-                Money.S2(l.Net),
-                Money.S2(l.Vat),
-                l.WithholdingRate,      // Added
-                Money.S2(l.WithholdingAmount), // Added
-                Money.S2(l.Gross),
-                Money.S2(l.GrandTotal)  // Added
+                l.DiscountRate,
+                l.DiscountAmount,
+                l.Net,
+                l.Vat,
+                l.WithholdingRate,
+                l.WithholdingAmount,
+                l.Gross,
+                l.GrandTotal
             ))
             .ToList();
 
@@ -192,13 +192,13 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             fresh.DateUtc,
             fresh.InvoiceNumber,
             fresh.Currency,
-            Money.S2(fresh.TotalLineGross), // Added
-            Money.S2(fresh.TotalDiscount),  // Added
-            Money.S2(fresh.TotalNet),
-            Money.S2(fresh.TotalVat),
-            Money.S2(fresh.TotalWithholding), // Added
-            Money.S2(fresh.TotalGross),
-            Money.S2(fresh.Balance),
+            fresh.TotalLineGross,
+            fresh.TotalDiscount,
+            fresh.TotalNet,
+            fresh.TotalVat,
+            fresh.TotalWithholding,
+            fresh.TotalGross,
+            fresh.Balance,
             linesDto,
             Convert.ToBase64String(fresh.RowVersion),
             fresh.CreatedAtUtc,
@@ -234,30 +234,20 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
     private void ProcessLine(Invoice inv, InvoiceLine line, UpdateInvoiceLineDto dto, Dictionary<int, dynamic> itemsMap, Dictionary<int, dynamic> expensesMap, DateTime now)
     {
-        if (!Money.TryParse4(dto.Qty, out var qty)) throw new BusinessRuleException($"Invalid Qty.");
-        if (!Money.TryParse4(dto.UnitPrice, out var unitPrice)) throw new BusinessRuleException($"Invalid Price.");
-
-        decimal discountRate = 0;
-        if (!string.IsNullOrWhiteSpace(dto.DiscountRate))
-            Money.TryParse4(dto.DiscountRate, out discountRate);
-
+        decimal discountRate = dto.DiscountRate ?? 0;
         int withholdingRate = dto.WithholdingRate ?? 0;
 
-        // Normalize
-        qty = Money.R3(Math.Abs(qty));
-        unitPrice = Money.R4(unitPrice);
-
         // Calculations
-        var gross = Money.R2(qty * unitPrice);
-        var discountAmount = Money.R2(gross * discountRate / 100m);
+        var gross = DecimalExtensions.RoundQuantity(dto.Qty * dto.UnitPrice);
+        var discountAmount = DecimalExtensions.RoundAmount(gross * discountRate / 100m);
         var net = gross - discountAmount;
-        var vatAmount = Money.R2(net * dto.VatRate / 100m);
-        var withholdingAmount = Money.R2(vatAmount * withholdingRate / 100m);
+        var vatAmount = DecimalExtensions.RoundAmount(net * dto.VatRate / 100m);
+        var withholdingAmount = DecimalExtensions.RoundAmount(vatAmount * withholdingRate / 100m);
         var grandTotal = net + vatAmount;
 
         // Assign to Line
-        line.Qty = qty;
-        line.UnitPrice = unitPrice;
+        line.Qty = dto.Qty;
+        line.UnitPrice = dto.UnitPrice;
         line.VatRate = dto.VatRate;
         line.DiscountRate = discountRate;
         line.DiscountAmount = discountAmount;
@@ -369,7 +359,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
                 WarehouseId: defaultWarehouse.Id,
                 ItemId: line.ItemId.Value,
                 Type: movementType.Value,
-                Quantity: Money.S3(absQty),
+                Quantity: DecimalExtensions.RoundQuantity(absQty),
                 TransactionDateUtc: invoice.DateUtc,
                 Note: null,
                 InvoiceId: invoice.Id

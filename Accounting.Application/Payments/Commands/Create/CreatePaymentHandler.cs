@@ -27,10 +27,6 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
 
     public async Task<CreatePaymentResult> Handle(CreatePaymentCommand req, CancellationToken ct)
     {
-        // Amount Parse
-        if (!Money.TryParse2(req.Amount, out var amount))
-            throw new FluentValidation.ValidationException("Amount is invalid.");
-
         // Currency Normalization & Validation
         var currency = CommonValidationRules.NormalizeAndValidateCurrency(req.Currency);
 
@@ -44,7 +40,7 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
             LinkedInvoiceId = req.LinkedInvoiceId,
             DateUtc = DateTime.SpecifyKind(req.DateUtc, DateTimeKind.Utc),
             Direction = req.Direction,
-            Amount = amount,
+            Amount = req.Amount,
             Currency = currency,
             Description = req.Description?.Trim()
         };
@@ -80,7 +76,7 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
         var inv = CultureInfo.InvariantCulture;
         return new CreatePaymentResult(
             entity.Id,
-            Money.S2(entity.Amount),
+            entity.Amount,
             entity.Currency
         );
     }

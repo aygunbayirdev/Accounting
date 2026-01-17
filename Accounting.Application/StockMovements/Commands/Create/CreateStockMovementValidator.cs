@@ -12,8 +12,6 @@ public class CreateStockMovementValidator : AbstractValidator<CreateStockMovemen
         RuleFor(x => x.WarehouseId).GreaterThan(0);
         RuleFor(x => x.ItemId).GreaterThan(0);
 
-        RuleFor(x => x.Quantity).MustBeValidQuantity();
-
         RuleFor(x => x.Note).MaximumLength(500);
     }
 }

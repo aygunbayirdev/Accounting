@@ -13,12 +13,5 @@ public class UpdateItemValidator : AbstractValidator<UpdateItemCommand>
         RuleFor(x => x.Unit).NotEmpty().MaximumLength(16);
         RuleFor(x => x.VatRate).InclusiveBetween(0, 100);
         RuleFor(x => x.RowVersion).MustBeValidRowVersion();
-        RuleFor(x => x.PurchasePrice)
-            .MustBeValidUnitPrice()
-            .When(x => !string.IsNullOrWhiteSpace(x.PurchasePrice));
-
-        RuleFor(x => x.SalesPrice)
-            .MustBeValidUnitPrice()
-            .When(x => !string.IsNullOrWhiteSpace(x.SalesPrice));
     }
 }

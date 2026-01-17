@@ -17,12 +17,8 @@ public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService cu
     {
         var branchId = currentUserService.BranchId ?? throw new UnauthorizedAccessException();
 
-        // qty parse (FE string) -> decimal
-        if (!Money.TryParse4(r.Quantity, out var parsed))
-            throw new BusinessRuleException("Quantity formatı geçersiz.");
-
         // stokta 3 ondalık yeterli (kg/lt)
-        var qty = Money.R3(parsed);
+        var qty = DecimalExtensions.RoundQuantity(r.Quantity);
         if (qty <= 0) throw new BusinessRuleException("Quantity 0'dan büyük olmalı.");
 
         // Warehouse kontrolü (şube uyumu da dahil)
@@ -59,7 +55,7 @@ public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService cu
         var signedQty = IsIn(r.Type) ? qty : -qty;
 
         // business rule: stok negatife düşemez
-        var newQty = Money.R3(stock.Quantity + signedQty);
+        var newQty = DecimalExtensions.RoundQuantity(stock.Quantity + signedQty);
         if (newQty < 0m)
             throw new BusinessRuleException("Yetersiz stok.");
 
@@ -109,7 +105,7 @@ public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService cu
             saved.Item.Name,
             saved.Item.Unit,
             saved.Type,
-            Money.S3(saved.Quantity),
+            saved.Quantity,
             saved.TransactionDateUtc,
             saved.Note,
             Convert.ToBase64String(saved.RowVersion),

@@ -11,24 +11,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Update;
 
-public record UpdateOrderCommand(
-    int Id,
-    int ContactId,
-    DateTime DateUtc,
-    string? Description,
-    List<UpdateOrderLineDto> Lines,
-    string RowVersion
-) : IRequest<OrderDto>;
-
-public record UpdateOrderLineDto(
-    int? Id, // Null = New Line
-    int? ItemId,
-    string Description,
-    string Quantity,
-    string UnitPrice,
-    int VatRate
-);
-
 public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
 {
     private readonly IAppDbContext _db;
@@ -78,10 +60,8 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
 
         foreach (var l in r.Lines)
         {
-            Money.TryParse3(l.Quantity, out var qty);
-            Money.TryParse2(l.UnitPrice, out var price);
-            var lineNet = Money.R2(qty * price);
-            var vatAmount = Money.R2(lineNet * l.VatRate / 100m);
+            var lineNet = DecimalExtensions.RoundAmount(l.Quantity * l.UnitPrice);
+            var vatAmount = DecimalExtensions.RoundAmount(lineNet * l.VatRate / 100m);
 
             totalNet += lineNet;
             totalVat += vatAmount;
@@ -93,8 +73,8 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
 
                 existing.ItemId = l.ItemId;
                 existing.Description = l.Description;
-                existing.Quantity = qty;
-                existing.UnitPrice = price;
+                existing.Quantity = l.Quantity;
+                existing.UnitPrice = l.UnitPrice;
                 existing.VatRate = l.VatRate;
                 existing.Total = lineNet;
                 existing.UpdatedAtUtc = DateTime.UtcNow;
@@ -105,8 +85,8 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
                 {
                     ItemId = l.ItemId,
                     Description = l.Description,
-                    Quantity = qty,
-                    UnitPrice = price,
+                    Quantity = l.Quantity,
+                    UnitPrice = l.UnitPrice,
                     VatRate = l.VatRate,
                     Total = lineNet
                 });

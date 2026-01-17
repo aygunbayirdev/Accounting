@@ -7,7 +7,7 @@ namespace Accounting.Application.CashBankAccounts.Commands.Update;
 
 public record UpdateCashBankAccountCommand(
     int Id,
-    CashBankAccountType Type,   // <-- enum (Cash|Bank)
+    CashBankAccountType Type,
     string Name,
     string? Iban,
     string RowVersion

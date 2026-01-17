@@ -10,16 +10,16 @@ public record PagedResult<T>(
 
 // For payment
 public record PagedTotals(
-    string? PageTotalAmount,
-    string? FilteredTotalAmount
+    decimal? PageTotalAmount,
+    decimal? FilteredTotalAmount
     );
 
 public record InvoicePagedTotals(
-    string PageTotalNet,
-    string PageTotalVat,
-    string PageTotalGross,
-    string FilteredTotalNet,
-    string FilteredTotalVat,
-    string FilteredTotalGross
+    decimal PageTotalNet,
+    decimal PageTotalVat,
+    decimal PageTotalGross,
+    decimal FilteredTotalNet,
+    decimal FilteredTotalVat,
+    decimal FilteredTotalGross
     );
 

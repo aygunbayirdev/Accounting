@@ -9,6 +9,7 @@ using Accounting.Application.Orders.Commands.Update;
 using Accounting.Application.Orders.Dto;
 using Accounting.Application.Orders.Queries;
 using Accounting.Application.Orders.Queries.GetById;
+using Accounting.Application.Orders.Queries.List;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,7 @@ public class OrdersController(IMediator mediator) : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var query = new GetOrdersQuery(branchId, contactId, status, page, pageSize);
+        var query = new ListOrdersQuery(branchId, contactId, status, page, pageSize);
         return Ok(await mediator.Send(query, ct));
     }
 
@@ -83,7 +84,7 @@ public class OrdersController(IMediator mediator) : ControllerBase
         [FromQuery] OrderStatus? status,
         CancellationToken ct)
     {
-        var query = new GetOrdersQuery(branchId, contactId, status, 1, 10000); // 10k limit for export
+        var query = new ListOrdersQuery(branchId, contactId, status, 1, 10000); // 10k limit for export
         var result = await mediator.Send(query, ct);
         
         var fileContent = await excelService.ExportAsync(result.Items, "Orders");

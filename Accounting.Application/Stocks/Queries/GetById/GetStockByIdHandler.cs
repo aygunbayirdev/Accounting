@@ -29,7 +29,7 @@ public class GetStockByIdHandler(IAppDbContext db) : IRequestHandler<GetStockByI
             e.Item.Code,
             e.Item.Name,
             e.Item.Unit,
-            Money.S3(e.Quantity),
+            e.Quantity,
             Convert.ToBase64String(e.RowVersion),
             e.CreatedAtUtc,
             e.UpdatedAtUtc

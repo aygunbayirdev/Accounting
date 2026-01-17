@@ -43,25 +43,8 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDt
         e.VatRate = r.VatRate;
         e.DefaultWithholdingRate = r.DefaultWithholdingRate;
 
-        if (r.PurchasePrice is null)
-        {
-            e.PurchasePrice = null;
-        }
-        else
-        {
-            Money.TryParse2(r.PurchasePrice, out var pp);
-            e.PurchasePrice = Money.R2(pp);
-        }
-
-        if (r.SalesPrice is null)
-        {
-            e.SalesPrice = null;
-        }
-        else
-        {
-            Money.TryParse2(r.SalesPrice, out var sp);
-            e.SalesPrice = Money.R2(sp);
-        }
+        e.PurchasePrice = r.PurchasePrice is null ? null : DecimalExtensions.RoundAmount(r.PurchasePrice.Value);
+        e.SalesPrice = r.SalesPrice is null ? null : DecimalExtensions.RoundAmount(r.SalesPrice.Value);
 
         // (6) save + concurrency
         try
@@ -92,8 +75,8 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDt
             fresh.Unit,
             fresh.VatRate,
             fresh.DefaultWithholdingRate ?? 0,
-            fresh.PurchasePrice is null ? null : Money.S2(fresh.PurchasePrice.Value),
-            fresh.SalesPrice is null ? null : Money.S2(fresh.SalesPrice.Value),
+            fresh.PurchasePrice is null ? null : fresh.PurchasePrice.Value,
+            fresh.SalesPrice is null ? null : fresh.SalesPrice.Value,
             Convert.ToBase64String(fresh.RowVersion),
             fresh.CreatedAtUtc,
             fresh.UpdatedAtUtc

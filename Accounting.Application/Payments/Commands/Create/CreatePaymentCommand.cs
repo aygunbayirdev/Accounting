@@ -1,5 +1,7 @@
+using Accounting.Application.Common.JsonConverters;
 using Accounting.Domain.Enums;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace Accounting.Application.Payments.Commands.Create;
 
@@ -9,13 +11,19 @@ public record CreatePaymentCommand(
     int? LinkedInvoiceId,
     DateTime DateUtc,
     PaymentDirection Direction,
-    string Amount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Amount,
+
     string Currency,
     string? Description
 ) : IRequest<CreatePaymentResult>;
 
 public record CreatePaymentResult(
     int Id,
-    string Amount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Amount,
+
     string Currency
 );

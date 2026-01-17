@@ -63,7 +63,7 @@ public class ListStocksHandler(IAppDbContext db, ICurrentUserService currentUser
                 x.Item.Code,
                 x.Item.Name,
                 x.Item.Unit,
-                Money.S3(x.Quantity),
+                x.Quantity,
                 Convert.ToBase64String(x.RowVersion),
                 x.CreatedAtUtc,
                 x.UpdatedAtUtc

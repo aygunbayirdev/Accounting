@@ -1,3 +1,6 @@
+using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
 namespace Accounting.Application.Cheques.Queries.Dto;
 
 public record ChequeDetailDto(
@@ -5,7 +8,10 @@ public record ChequeDetailDto(
     int BranchId,
     string ChequeNumber,
     string Type,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Amount,
+
     DateTime DueDateUtc,
     string? DrawerName,
     string? BankName,

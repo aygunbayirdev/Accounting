@@ -64,7 +64,7 @@ public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery
                 x.Item.Name,
                 x.Item.Unit,
                 x.Type,
-                Money.S3(x.Quantity),
+                x.Quantity,
                 x.TransactionDateUtc,
                 x.Note,
                 Convert.ToBase64String(x.RowVersion),

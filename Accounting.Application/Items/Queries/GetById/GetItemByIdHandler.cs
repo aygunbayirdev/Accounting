@@ -38,8 +38,8 @@ public class GetItemByIdHandler : IRequestHandler<GetItemByIdQuery, ItemDetailDt
             x.Unit,
             x.VatRate,
             x.DefaultWithholdingRate ?? 0,
-            x.PurchasePrice is null ? null : Money.S2(x.PurchasePrice.Value),
-            x.SalesPrice is null ? null : Money.S2(x.SalesPrice.Value),
+            x.PurchasePrice is null ? null : x.PurchasePrice.Value,
+            x.SalesPrice is null ? null : x.SalesPrice.Value,
             Convert.ToBase64String(x.RowVersion),
             x.CreatedAtUtc,
             x.UpdatedAtUtc

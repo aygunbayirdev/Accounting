@@ -21,7 +21,7 @@ public class AccountBalanceService(IAppDbContext db) : IAccountBalanceService
         var totalOut = movements.Where(m => m.Direction == PaymentDirection.Out).Sum(m => m.Amount);
 
         // 2. Balance = In - Out
-        var balance = Money.R2(totalIn - totalOut);
+        var balance = DecimalExtensions.RoundAmount(totalIn - totalOut);
 
         // 3. Update Account
         // We need to fetch the account with tracking to update it

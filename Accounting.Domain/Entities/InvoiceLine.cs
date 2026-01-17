@@ -1,4 +1,5 @@
 ﻿using Accounting.Domain.Common;
+using System.Text.Json.Serialization;
 
 namespace Accounting.Domain.Entities;
 
@@ -23,7 +24,7 @@ public class InvoiceLine : IHasTimestamps, ISoftDeletable
 
     // Türemiş/saklanan tutarlar (AwayFromZero, 2 hane)
     public decimal Gross { get; set; }      // Brüt (Qty * Price) [DEĞİŞTİ: Eskiden Net/Vat/Gross farklıydı, şimdi standartlaşıyor]
-    
+
     public decimal DiscountRate { get; set; }   // İskonto Oranı (%)
     public decimal DiscountAmount { get; set; } // İskonto Tutarı
     

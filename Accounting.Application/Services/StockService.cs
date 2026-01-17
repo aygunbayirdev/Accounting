@@ -19,7 +19,7 @@ public class StockService(IAppDbContext db) : IStockService
             .Select(l => new
             {
                 l.ItemId,
-                Type = l.Invoice.Type,
+                l.Invoice.Type,
                 l.Qty // InvoiceLine uses Qty (Corrected)
             })
             .ToListAsync(ct);

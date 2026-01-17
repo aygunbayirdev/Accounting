@@ -9,23 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Create;
 
-public record CreateOrderCommand(
-    int ContactId,
-    DateTime DateUtc,
-    InvoiceType Type,
-    string Currency,
-    string? Description,
-    List<CreateOrderLineDto> Lines
-) : IRequest<OrderDto>;
-
-public record CreateOrderLineDto(
-    int? ItemId,
-    string Description,
-    string Quantity,
-    string UnitPrice,
-    int VatRate
-);
-
 public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUserService) : IRequestHandler<CreateOrderCommand, OrderDto>
 {
     public async Task<OrderDto> Handle(CreateOrderCommand r, CancellationToken ct)
@@ -65,11 +48,8 @@ public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUse
 
         foreach (var l in r.Lines)
         {
-            Money.TryParse3(l.Quantity, out var qty);
-            Money.TryParse2(l.UnitPrice, out var price);
-
-            var lineNet = Money.R2(qty * price);
-            var vatAmount = Money.R2(lineNet * l.VatRate / 100m);
+            var lineNet = DecimalExtensions.RoundAmount(l.Quantity * l.UnitPrice);
+            var vatAmount = DecimalExtensions.RoundAmount(lineNet * l.VatRate / 100m);
 
             totalNet += lineNet;
             totalVat += vatAmount;
@@ -78,8 +58,8 @@ public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUse
             {
                 ItemId = l.ItemId,
                 Description = l.Description,
-                Quantity = qty,
-                UnitPrice = price,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
                 VatRate = l.VatRate,
                 Total = lineNet // Storing Net Total line-by-line
             });

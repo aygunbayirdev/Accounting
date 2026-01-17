@@ -1,6 +1,8 @@
+using Accounting.Application.Common.JsonConverters;
 using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace Accounting.Application.Invoices.Commands.Create;
 
@@ -17,8 +19,15 @@ public record CreateInvoiceCommand(
 
 public record CreateInvoiceResult(
     int Id,
-    string TotalNet,
-    string TotalVat,
-    string TotalGross,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalNet,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalVat,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalGross,
+
     string RoundingPolicy
 );

@@ -22,20 +22,6 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
 
     public async Task<ItemDetailDto> Handle(CreateItemCommand r, CancellationToken ct)
     {
-        decimal? pPrice = null;
-        if (r.PurchasePrice is not null)
-        {
-            Money.TryParse2(r.PurchasePrice, out var pp);
-            pPrice = Money.R2(pp);
-        }
-
-        decimal? sPrice = null;
-        if (r.SalesPrice is not null)
-        {
-            Money.TryParse2(r.SalesPrice, out var sp);
-            sPrice = Money.R2(sp);
-        }
-
         var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException();
 
         // Check for duplicate code
@@ -52,8 +38,8 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
             Unit = r.Unit.Trim(),
             VatRate = r.VatRate,
             DefaultWithholdingRate = r.DefaultWithholdingRate,
-            PurchasePrice = pPrice,
-            SalesPrice = sPrice
+            PurchasePrice = r.PurchasePrice,
+            SalesPrice = r.SalesPrice
             // Created/Updated defaults via interceptor
         };
 
@@ -81,8 +67,8 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
             saved.Unit,
             saved.VatRate,
             saved.DefaultWithholdingRate ?? 0,
-            saved.PurchasePrice is null ? null : Money.S2(saved.PurchasePrice.Value),
-            saved.SalesPrice is null ? null : Money.S2(saved.SalesPrice.Value),
+            saved.PurchasePrice is null ? null : saved.PurchasePrice.Value,
+            saved.SalesPrice is null ? null : saved.SalesPrice.Value,
             Convert.ToBase64String(saved.RowVersion),
             saved.CreatedAtUtc,
             saved.UpdatedAtUtc

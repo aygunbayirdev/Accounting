@@ -55,16 +55,16 @@ public class GetDashboardStatsHandler(IAppDbContext db) : IRequestHandler<GetDas
                 a.Id,
                 a.Name,
                 a.Type == CashBankAccountType.Cash ? "Kasa" : "Banka",
-                Money.S2(a.Balance),
+                a.Balance,
                 "TRY" // Şimdilik default TRY
             ))
             .ToListAsync(ct);
 
         return new DashboardStatsDto(
-            Money.S2(dailySales),
-            Money.S2(dailyCollections),
-            Money.S2(receivables),
-            Money.S2(payables),
+            dailySales,
+            dailyCollections,
+            receivables,
+            payables,
             accounts
         );
     }

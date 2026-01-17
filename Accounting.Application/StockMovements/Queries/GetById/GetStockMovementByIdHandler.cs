@@ -29,7 +29,7 @@ public class GetStockMovementByIdHandler(IAppDbContext db) : IRequestHandler<Get
             e.Item.Name,
             e.Item.Unit,
             e.Type,
-            Money.S3(e.Quantity),
+            e.Quantity,
             e.TransactionDateUtc,
             e.Note,
             Convert.ToBase64String(e.RowVersion),

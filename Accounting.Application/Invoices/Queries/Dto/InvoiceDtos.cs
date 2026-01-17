@@ -1,4 +1,7 @@
-﻿namespace Accounting.Application.Invoices.Queries.Dto;
+﻿using Accounting.Application.Common.JsonConverters;
+using System.Text.Json.Serialization;
+
+namespace Accounting.Application.Invoices.Queries.Dto;
 
 public record InvoiceLineDto(
     int Id,
@@ -7,17 +10,36 @@ public record InvoiceLineDto(
     string ItemCode,
     string ItemName,
     string Unit,
-    string Qty,        // F3
-    string UnitPrice,  // F4
+
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Qty,
+
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
+    decimal UnitPrice,
+
     int VatRate,
-    string DiscountRate, // F2 (Added)
-    string DiscountAmount, // F2 (Added)
-    string Net,        // F2
-    string Vat,        // F2
-    int WithholdingRate, // (Added)
-    string WithholdingAmount, // F2 (Added)
-    string Gross,       // F2
-    string GrandTotal   // F2 (Added)
+
+    [property: JsonConverter(typeof(PercentJsonConverter))]
+    decimal DiscountRate,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal DiscountAmount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Net,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Vat,
+
+    int WithholdingRate,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal WithholdingAmount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Gross,
+
+    decimal GrandTotal
 );
 
 public record InvoiceDto(
@@ -26,15 +48,31 @@ public record InvoiceDto(
     string ContactCode,
     string ContactName,
     DateTime DateUtc,        // Belge tarihi (iş mantığı)
-    string InvoiceNumber,    // Added
+    string InvoiceNumber,
     string Currency,
-    string TotalLineGross,   // F2 (Added)
-    string TotalDiscount,    // F2 (Added)
-    string TotalNet,         // F2
-    string TotalVat,         // F2
-    string TotalWithholding, // F2 (Added)
-    string TotalGross,       // F2
-    string Balance,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalLineGross,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalDiscount,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalNet,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalVat,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalWithholding,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalGross,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Balance,
+
+
     IReadOnlyList<InvoiceLineDto> Lines,
     string RowVersion,       // base64
     DateTime CreatedAtUtc,   // Audit
@@ -43,9 +81,9 @@ public record InvoiceDto(
     int BranchId,
     string BranchCode,
     string BranchName,
-    string? WaybillNumber,     // (Added)
-    DateTime? WaybillDateUtc,  // (Added)
-    DateTime? PaymentDueDateUtc // (Added)
+    string? WaybillNumber,
+    DateTime? WaybillDateUtc,
+    DateTime? PaymentDueDateUtc
 );
 
 public record InvoiceListItemDto(
@@ -57,10 +95,10 @@ public record InvoiceListItemDto(
     string Type,             // Sales / Purchase
     DateTime DateUtc,
     string Currency,
-    string TotalNet,
-    string TotalVat,
-    string TotalGross,
-    string Balance,
+    decimal TotalNet,
+    decimal TotalVat,
+    decimal TotalGross,
+    decimal Balance,
     DateTime CreatedAtUtc,
     int BranchId,
     string BranchCode,

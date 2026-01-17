@@ -7,7 +7,7 @@ namespace Accounting.Application.CashBankAccounts.Commands.Create;
 
 public record CreateCashBankAccountCommand(
     int BranchId,
-    CashBankAccountType Type,   // <-- enum (Cash|Bank)
+    CashBankAccountType Type,
     string Name,
     string? Iban
 ) : IRequest<CashBankAccountDetailDto>;

@@ -20,7 +20,6 @@ public record ContactDto(
     int BranchId,
     string Code,
     string Name, // Display Name
-
     bool IsCustomer,
     bool IsVendor,
     bool IsEmployee,
