@@ -22,7 +22,7 @@ public class CompanySettingsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Permissions.CompanySettings.Read)]
-    public async Task<ActionResult<CompanySettingsDto>> Get()
+    public async Task<ActionResult<CompanySettingsDetailDto>> Get()
     {
         var result = await _mediator.Send(new GetCompanySettingsQuery());
         return Ok(result);
@@ -30,7 +30,7 @@ public class CompanySettingsController : ControllerBase
 
     [HttpPut]
     [Authorize(Policy = Permissions.CompanySettings.Update)]
-    public async Task<ActionResult<CompanySettingsDto>> Update(UpdateCompanySettingsCommand command)
+    public async Task<ActionResult<CompanySettingsDetailDto>> Update(UpdateCompanySettingsCommand command)
     {
         var result = await _mediator.Send(command);
         return Ok(result);

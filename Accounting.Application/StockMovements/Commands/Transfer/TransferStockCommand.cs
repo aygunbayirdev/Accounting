@@ -14,4 +14,4 @@ public record TransferStockCommand(
 
     DateTime TransactionDateUtc,
     string? Description
-) : IRequest<StockTransferDto>;
+) : IRequest<StockTransferDetailDto>;

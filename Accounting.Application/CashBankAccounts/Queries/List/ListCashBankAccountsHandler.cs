@@ -74,7 +74,8 @@ public class ListCashBankAccountsHandler : IRequestHandler<ListCashBankAccountsQ
                                    x.Type.ToString(),
                                    x.Name,
                                    x.Iban,
-                                   x.CreatedAtUtc
+                                   x.CreatedAtUtc,
+                                   x.UpdatedAtUtc
                                ))
                                .ToListAsync(ct);
 

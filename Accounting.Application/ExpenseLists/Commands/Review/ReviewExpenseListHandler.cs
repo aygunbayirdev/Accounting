@@ -1,19 +1,19 @@
 ﻿using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Exceptions;
+using Accounting.Application.Common.Utils;
 using Accounting.Application.ExpenseLists.Dto;
-using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.ExpenseLists.Commands.Review;
 
-public class ReviewExpenseListHandler : IRequestHandler<ReviewExpenseListCommand, ExpenseListDto>
+public class ReviewExpenseListHandler : IRequestHandler<ReviewExpenseListCommand, ExpenseListDetailDto>
 {
     private readonly IAppDbContext _db;
     public ReviewExpenseListHandler(IAppDbContext db) => _db = db;
 
-    public async Task<ExpenseListDto> Handle(ReviewExpenseListCommand req, CancellationToken ct)
+    public async Task<ExpenseListDetailDto> Handle(ReviewExpenseListCommand req, CancellationToken ct)
     {
         var list = await _db.ExpenseLists
             .Include(x => x.Lines.Where(l => !l.IsDeleted))
@@ -33,12 +33,16 @@ public class ReviewExpenseListHandler : IRequestHandler<ReviewExpenseListCommand
 
         await _db.SaveChangesAsync(ct);
 
-        return new ExpenseListDto(
-            Id: list.Id,
-            BranchId: list.BranchId,
-            Name: list.Name,
-            Status: list.Status.ToString(),
-            CreatedAtUtc: list.CreatedAtUtc
+        return new ExpenseListDetailDto(
+            list.Id,
+            list.BranchId,
+            list.Name,
+            list.Status.ToString(),
+            new List<ExpenseLineDto>(),
+            DecimalExtensions.RoundAmount(list.Lines.Sum(x => x.Amount)),
+            Convert.ToBase64String(list.RowVersion),
+            list.CreatedAtUtc,
+            list.UpdatedAtUtc
         );
     }
 }

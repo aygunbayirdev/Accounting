@@ -9,11 +9,11 @@ public record CreateCategoryCommand(
     string Name,
     string? Description,
     string? Color
-) : IRequest<CategoryDto>;
+) : IRequest<CategoryDetailDto>;
 
-public class CreateCategoryHandler(IAppDbContext db) : IRequestHandler<CreateCategoryCommand, CategoryDto>
+public class CreateCategoryHandler(IAppDbContext db) : IRequestHandler<CreateCategoryCommand, CategoryDetailDto>
 {
-    public async Task<CategoryDto> Handle(CreateCategoryCommand r, CancellationToken ct)
+    public async Task<CategoryDetailDto> Handle(CreateCategoryCommand r, CancellationToken ct)
     {
         var category = new Category
         {
@@ -26,7 +26,7 @@ public class CreateCategoryHandler(IAppDbContext db) : IRequestHandler<CreateCat
         db.Categories.Add(category);
         await db.SaveChangesAsync(ct);
 
-        return new CategoryDto(
+        return new CategoryDetailDto(
             category.Id,
             category.Name,
             category.Description,

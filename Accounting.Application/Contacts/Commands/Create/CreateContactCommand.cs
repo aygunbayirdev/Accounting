@@ -26,4 +26,4 @@ public record CreateContactCommand(
     // Details
     CompanyDetailsDto? CompanyDetails,
     PersonDetailsDto? PersonDetails
-    ) : IRequest<ContactDto>;
+    ) : IRequest<ContactDetailDto>;

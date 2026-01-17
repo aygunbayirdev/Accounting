@@ -135,7 +135,7 @@ public class CategoryTests
         );
         await db.SaveChangesAsync();
 
-        var handler = new GetCategoriesHandler(db);
+        var handler = new ListCategoriesHandler(db);
         var result = await handler.Handle(new GetCategoriesQuery(), CancellationToken.None);
 
         Assert.Equal(3, result.Total);

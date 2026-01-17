@@ -16,4 +16,4 @@ public record UpdateCompanySettingsCommand(
     string? MersisNo,
     string? LogoUrl,
     string? RowVersionBase64
-) : IRequest<CompanySettingsDto>;
+) : IRequest<CompanySettingsDetailDto>;

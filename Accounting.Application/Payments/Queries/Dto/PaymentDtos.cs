@@ -20,7 +20,8 @@ public record PaymentListItemDto(
 
     string Currency,
     string? Description,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record PaymentDetailDto(

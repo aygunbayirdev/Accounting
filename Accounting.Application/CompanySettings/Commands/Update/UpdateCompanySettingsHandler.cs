@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.CompanySettings.Commands.Update;
 
-public class UpdateCompanySettingsHandler : IRequestHandler<UpdateCompanySettingsCommand, CompanySettingsDto>
+public class UpdateCompanySettingsHandler : IRequestHandler<UpdateCompanySettingsCommand, CompanySettingsDetailDto>
 {
     private readonly IAppDbContext _context;
 
@@ -15,7 +15,7 @@ public class UpdateCompanySettingsHandler : IRequestHandler<UpdateCompanySetting
         _context = context;
     }
 
-    public async Task<CompanySettingsDto> Handle(UpdateCompanySettingsCommand request, CancellationToken cancellationToken)
+    public async Task<CompanySettingsDetailDto> Handle(UpdateCompanySettingsCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.CompanySettings
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
@@ -53,7 +53,7 @@ public class UpdateCompanySettingsHandler : IRequestHandler<UpdateCompanySetting
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new CompanySettingsDto(
+        return new CompanySettingsDetailDto(
             entity.Id,
             entity.Title,
             entity.TaxNumber,

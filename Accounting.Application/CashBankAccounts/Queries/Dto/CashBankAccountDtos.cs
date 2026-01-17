@@ -7,7 +7,8 @@ public record CashBankAccountListItemDto(
     string Type,        // "Cash" | "Bank"
     string Name,
     string? Iban,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record CashBankAccountDetailDto(

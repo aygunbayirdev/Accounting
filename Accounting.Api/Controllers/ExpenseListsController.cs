@@ -31,7 +31,7 @@ public sealed class ExpenseListsController : ControllerBase
     [HttpGet]
     [Authorize(Policy = Permissions.ExpenseList.Read)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<ExpenseListDto>>> List(
+    public async Task<ActionResult<PagedResult<ExpenseListListItemDto>>> List(
         [FromQuery] ListExpenseListsQuery query,
         CancellationToken ct)
     {
@@ -90,7 +90,7 @@ public sealed class ExpenseListsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ExpenseListDto>> Review(
+    public async Task<ActionResult<ExpenseListDetailDto>> Review(
         [FromRoute] int id,
         CancellationToken ct)
     {

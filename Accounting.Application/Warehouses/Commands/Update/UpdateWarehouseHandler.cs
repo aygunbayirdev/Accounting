@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Warehouses.Commands.Update;
 
-public class UpdateWarehouseHandler : IRequestHandler<UpdateWarehouseCommand, WarehouseDto>
+public class UpdateWarehouseHandler : IRequestHandler<UpdateWarehouseCommand, WarehouseDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -20,7 +20,7 @@ public class UpdateWarehouseHandler : IRequestHandler<UpdateWarehouseCommand, Wa
         _currentUserService = currentUserService;
     }
 
-    public async Task<WarehouseDto> Handle(UpdateWarehouseCommand r, CancellationToken ct)
+    public async Task<WarehouseDetailDto> Handle(UpdateWarehouseCommand r, CancellationToken ct)
     {
         var e = await _db.Warehouses
             .ApplyBranchFilter(_currentUserService)
@@ -73,7 +73,7 @@ public class UpdateWarehouseHandler : IRequestHandler<UpdateWarehouseCommand, Wa
 
         var saved = await _db.Warehouses.AsNoTracking().FirstAsync(x => x.Id == r.Id, ct);
 
-        return new WarehouseDto(
+        return new WarehouseDetailDto(
             saved.Id,
             saved.BranchId,
             saved.Code,

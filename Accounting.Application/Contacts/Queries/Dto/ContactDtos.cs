@@ -15,7 +15,7 @@ public record PersonDetailsDto(
     string? Department
 );
 
-public record ContactDto(
+public record ContactDetailDto(
     int Id,
     int BranchId,
     string Code,
@@ -44,5 +44,6 @@ public record ContactListItemDto(
     bool IsEmployee,
     bool IsRetail,
     string? Email,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );

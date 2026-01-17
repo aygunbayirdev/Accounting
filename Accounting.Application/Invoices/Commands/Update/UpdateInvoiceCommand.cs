@@ -15,7 +15,7 @@ public sealed record UpdateInvoiceCommand(
     DateTime? WaybillDateUtc,
     DateTime? PaymentDueDateUtc,
     IReadOnlyList<UpdateInvoiceLineDto> Lines
-) : IRequest<InvoiceDto>;
+) : IRequest<InvoiceDetailDto>;
 
 public sealed record UpdateInvoiceLineDto(
     int Id,

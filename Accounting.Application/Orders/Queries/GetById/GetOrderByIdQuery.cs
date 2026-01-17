@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Accounting.Application.Orders.Queries.GetById;
 
-public record GetOrderByIdQuery(int Id) : IRequest<OrderDto>;
+public record GetOrderByIdQuery(int Id) : IRequest<OrderDetailDto>;

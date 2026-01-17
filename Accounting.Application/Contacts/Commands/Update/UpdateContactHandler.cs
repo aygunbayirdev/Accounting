@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Contacts.Commands.Update;
 
-public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, ContactDto>
+public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, ContactDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -21,7 +21,7 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
         _currentUserService = currentUserService;
     }
 
-    public async Task<ContactDto> Handle(UpdateContactCommand req, CancellationToken ct)
+    public async Task<ContactDetailDto> Handle(UpdateContactCommand req, CancellationToken ct)
     {
         // 1) Fetch (TRACKING) + Includes
         var c = await _db.Contacts
@@ -125,7 +125,7 @@ public class UpdateContactHandler : IRequestHandler<UpdateContactCommand, Contac
         if (fresh is null) throw new NotFoundException("Contact", req.Id);
 
         // 8) DTO
-        return new ContactDto(
+        return new ContactDetailDto(
             fresh.Id,
             fresh.BranchId,
             fresh.Code,

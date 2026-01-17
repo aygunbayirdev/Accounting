@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Queries.GetById;
 
-public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
+public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -19,7 +19,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
         _currentUserService = currentUserService;
     }
 
-    public async Task<OrderDto> Handle(GetOrderByIdQuery r, CancellationToken ct)
+    public async Task<OrderDetailDto> Handle(GetOrderByIdQuery r, CancellationToken ct)
     {
         var order = await _db.Orders
             .AsNoTracking()
@@ -32,7 +32,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
         if (order is null)
             throw new NotFoundException("Order", r.Id);
 
-        return new OrderDto(
+        return new OrderDetailDto(
             order.Id,
             order.BranchId,
             order.OrderNumber,
@@ -55,8 +55,9 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
                 l.VatRate,
                 l.Total
             )).ToList(),
+            Convert.ToBase64String(order.RowVersion),
             order.CreatedAtUtc,
-            Convert.ToBase64String(order.RowVersion)
+            order.UpdatedAtUtc
         );
     }
 }

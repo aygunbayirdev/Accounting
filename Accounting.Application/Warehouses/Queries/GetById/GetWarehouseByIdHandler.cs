@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Warehouses.Queries.GetById;
 
-public class GetWarehouseByIdHandler : IRequestHandler<GetWarehouseByIdQuery, WarehouseDto>
+public class GetWarehouseByIdHandler : IRequestHandler<GetWarehouseByIdQuery, WarehouseDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -18,7 +18,7 @@ public class GetWarehouseByIdHandler : IRequestHandler<GetWarehouseByIdQuery, Wa
         _db = db;
         _currentUserService = currentUserService;
     }
-    public async Task<WarehouseDto> Handle(GetWarehouseByIdQuery r, CancellationToken ct)
+    public async Task<WarehouseDetailDto> Handle(GetWarehouseByIdQuery r, CancellationToken ct)
     {
         var e = await _db.Warehouses
             .AsNoTracking()
@@ -27,7 +27,7 @@ public class GetWarehouseByIdHandler : IRequestHandler<GetWarehouseByIdQuery, Wa
 
         if (e is null) throw new NotFoundException("Warehouse", r.Id);
 
-        return new WarehouseDto(
+        return new WarehouseDetailDto(
             e.Id,
             e.BranchId,
             e.Code,

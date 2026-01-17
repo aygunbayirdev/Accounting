@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Accounting.Application.Contacts.Queries.GetById;
 
-public record GetContactByIdQuery(int Id) : IRequest<ContactDto>;
+public record GetContactByIdQuery(int Id) : IRequest<ContactDetailDto>;

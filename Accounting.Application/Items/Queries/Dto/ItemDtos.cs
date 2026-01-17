@@ -21,7 +21,8 @@ public record ItemListItemDto(
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? SalesPrice,
 
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record ItemDetailDto(

@@ -49,8 +49,7 @@ public sealed class GetFixedAssetByIdHandler
             x.IsDeleted,
             Convert.ToBase64String(x.RowVersion),
             x.CreatedAtUtc,
-            x.UpdatedAtUtc,
-            x.DeletedAtUtc
+            x.UpdatedAtUtc
         );
     }
 }

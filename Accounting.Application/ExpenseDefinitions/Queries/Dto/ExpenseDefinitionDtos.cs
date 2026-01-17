@@ -6,7 +6,8 @@ public record ExpenseDefinitionListItemDto(
     string Name,
     int DefaultVatRate,
     bool IsActive,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record ExpenseDefinitionDetailDto(
@@ -15,7 +16,7 @@ public record ExpenseDefinitionDetailDto(
     string Name,
     int DefaultVatRate,
     bool IsActive,
-    string RowVersion,      // base64
+    string RowVersion, // base64
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
 );

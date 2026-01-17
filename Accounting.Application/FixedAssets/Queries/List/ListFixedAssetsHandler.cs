@@ -59,7 +59,9 @@ public sealed class ListFixedAssetsHandler
                 x.PurchaseDateUtc,
                 x.PurchasePrice,
                 x.UsefulLifeYears,
-                x.DepreciationRatePercent
+                x.DepreciationRatePercent,
+                x.CreatedAtUtc,
+                x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 

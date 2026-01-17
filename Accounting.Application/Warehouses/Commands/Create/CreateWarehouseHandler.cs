@@ -10,9 +10,9 @@ using Accounting.Application.Common.Interfaces;
 namespace Accounting.Application.Warehouses.Commands.Create;
 
 public class CreateWarehouseHandler(IAppDbContext db, ICurrentUserService currentUserService)
-    : IRequestHandler<CreateWarehouseCommand, WarehouseDto>
+    : IRequestHandler<CreateWarehouseCommand, WarehouseDetailDto>
 {
-    public async Task<WarehouseDto> Handle(CreateWarehouseCommand r, CancellationToken ct)
+    public async Task<WarehouseDetailDto> Handle(CreateWarehouseCommand r, CancellationToken ct)
     {
         var branchId = currentUserService.BranchId ?? throw new UnauthorizedAccessException();
         var code = r.Code.Trim().ToUpperInvariant();
@@ -51,7 +51,7 @@ public class CreateWarehouseHandler(IAppDbContext db, ICurrentUserService curren
         // fresh read (rowversion)
         var saved = await db.Warehouses.AsNoTracking().FirstAsync(x => x.Id == e.Id, ct);
 
-        return new WarehouseDto(
+        return new WarehouseDetailDto(
             saved.Id,
             saved.BranchId,
             saved.Code,

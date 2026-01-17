@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.StockMovements.Queries.List;
 
-public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery, PagedResult<StockMovementDto>>
+public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery, PagedResult<StockMovementListItemDto>>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -20,7 +20,7 @@ public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery
         _db = db;
         _currentUserService = currentUserService;
     }
-    public async Task<PagedResult<StockMovementDto>> Handle(ListStockMovementsQuery r, CancellationToken ct)
+    public async Task<PagedResult<StockMovementListItemDto>> Handle(ListStockMovementsQuery r, CancellationToken ct)
     {
         IQueryable<StockMovement> q = _db.StockMovements
             .AsNoTracking()
@@ -54,7 +54,7 @@ public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery
         var items = await q
             .Skip((r.PageNumber - 1) * r.PageSize)
             .Take(r.PageSize)
-            .Select(x => new StockMovementDto(
+            .Select(x => new StockMovementListItemDto(
                 x.Id,
                 x.BranchId,
                 x.WarehouseId,
@@ -67,13 +67,12 @@ public class ListStockMovementsHandler : IRequestHandler<ListStockMovementsQuery
                 x.Quantity,
                 x.TransactionDateUtc,
                 x.Note,
-                Convert.ToBase64String(x.RowVersion),
                 x.CreatedAtUtc,
                 x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<StockMovementDto>(
+        return new PagedResult<StockMovementListItemDto>(
             total,
             r.PageNumber,
             r.PageSize,

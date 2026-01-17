@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.StockMovements.Queries.GetById;
 
-public class GetStockMovementByIdHandler(IAppDbContext db) : IRequestHandler<GetStockMovementByIdQuery, StockMovementDto>
+public class GetStockMovementByIdHandler(IAppDbContext db) : IRequestHandler<GetStockMovementByIdQuery, StockMovementDetailDto>
 {
-    public async Task<StockMovementDto> Handle(GetStockMovementByIdQuery r, CancellationToken ct)
+    public async Task<StockMovementDetailDto> Handle(GetStockMovementByIdQuery r, CancellationToken ct)
     {
         var e = await db.StockMovements
             .AsNoTracking()
@@ -19,7 +19,7 @@ public class GetStockMovementByIdHandler(IAppDbContext db) : IRequestHandler<Get
 
         if (e is null) throw new NotFoundException("StockMovement", r.Id);
 
-        return new StockMovementDto(
+        return new StockMovementDetailDto(
             e.Id,
             e.BranchId,
             e.WarehouseId,

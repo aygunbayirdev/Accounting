@@ -62,7 +62,8 @@ public sealed class ListExpenseDefinitionsHandler
                 x.Name,
                 x.DefaultVatRate,
                 x.IsActive,
-                x.CreatedAtUtc
+                x.CreatedAtUtc,
+                x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 

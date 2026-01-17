@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Accounting.Application.Warehouses.Queries.GetById;
 
-public record GetWarehouseByIdQuery(int Id) : IRequest<WarehouseDto>;
+public record GetWarehouseByIdQuery(int Id) : IRequest<WarehouseDetailDto>;

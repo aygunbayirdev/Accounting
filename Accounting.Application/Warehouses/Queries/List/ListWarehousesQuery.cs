@@ -11,4 +11,4 @@ public record ListWarehousesQuery(
     int PageNumber = 1,
     int PageSize = PaginationConstants.DefaultPageSize,
     string? Sort = "name:asc"        // code/name/isDefault
-) : IRequest<PagedResult<WarehouseDto>>;
+) : IRequest<PagedResult<WarehouseListItemDto>>;

@@ -12,7 +12,7 @@ using System.Globalization;
 
 using Accounting.Application.Common.Interfaces;
 
-public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand, InvoiceDto>
+public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand, InvoiceDetailDto>
 {
     private readonly IAppDbContext _ctx;
     private readonly IInvoiceBalanceService _balanceService;
@@ -27,7 +27,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         _currentUserService = currentUserService;
     }
 
-    public async Task<InvoiceDto> Handle(UpdateInvoiceCommand r, CancellationToken ct)
+    public async Task<InvoiceDetailDto> Handle(UpdateInvoiceCommand r, CancellationToken ct)
     {
         // 1) Aggregate (+Include)
         var inv = await _ctx.Invoices
@@ -184,7 +184,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             .ToList();
 
         // 7) DTO build
-        return new InvoiceDto(
+        return new InvoiceDetailDto(
             fresh.Id,
             fresh.ContactId,
             fresh.Contact?.Code ?? "",
@@ -200,16 +200,16 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             fresh.TotalGross,
             fresh.Balance,
             linesDto,
-            Convert.ToBase64String(fresh.RowVersion),
-            fresh.CreatedAtUtc,
-            fresh.UpdatedAtUtc,
             (int)fresh.Type,
             fresh.BranchId,
             fresh.Branch.Code,
             fresh.Branch.Name,
             fresh.WaybillNumber,
             fresh.WaybillDateUtc,
-            fresh.PaymentDueDateUtc
+            fresh.PaymentDueDateUtc,
+            Convert.ToBase64String(fresh.RowVersion),
+            fresh.CreatedAtUtc,
+            fresh.UpdatedAtUtc
         );
     }
 

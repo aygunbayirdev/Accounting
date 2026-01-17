@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Branches.Commands.Update;
 
-public record UpdateBranchCommand(int Id, string Code, string Name, string RowVersionBase64) : IRequest<BranchDto>;
+public record UpdateBranchCommand(int Id, string Code, string Name, string RowVersionBase64) : IRequest<BranchDetailDto>;
 
-public class UpdateBranchHandler : IRequestHandler<UpdateBranchCommand, BranchDto>
+public class UpdateBranchHandler : IRequestHandler<UpdateBranchCommand, BranchDetailDto>
 {
     private readonly IAppDbContext _context;
 
@@ -17,7 +17,7 @@ public class UpdateBranchHandler : IRequestHandler<UpdateBranchCommand, BranchDt
         _context = context;
     }
 
-    public async Task<BranchDto> Handle(UpdateBranchCommand request, CancellationToken cancellationToken)
+    public async Task<BranchDetailDto> Handle(UpdateBranchCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Branches
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
@@ -38,11 +38,13 @@ public class UpdateBranchHandler : IRequestHandler<UpdateBranchCommand, BranchDt
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new BranchDto(
+        return new BranchDetailDto(
             entity.Id, 
             entity.Code, 
             entity.Name, 
-            Convert.ToBase64String(entity.RowVersion)
+            Convert.ToBase64String(entity.RowVersion),
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc
         );
     }
 }

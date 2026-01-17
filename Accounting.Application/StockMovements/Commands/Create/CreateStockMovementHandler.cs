@@ -11,9 +11,9 @@ using Accounting.Application.Common.Interfaces;
 
 namespace Accounting.Application.StockMovements.Commands.Create;
 
-public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService currentUserService) : IRequestHandler<CreateStockMovementCommand, StockMovementDto>
+public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService currentUserService) : IRequestHandler<CreateStockMovementCommand, StockMovementDetailDto>
 {
-    public async Task<StockMovementDto> Handle(CreateStockMovementCommand r, CancellationToken ct)
+    public async Task<StockMovementDetailDto> Handle(CreateStockMovementCommand r, CancellationToken ct)
     {
         var branchId = currentUserService.BranchId ?? throw new UnauthorizedAccessException();
 
@@ -95,7 +95,7 @@ public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService cu
             .Include(x => x.Item)
             .FirstAsync(x => x.Id == movement.Id, ct);
 
-        return new StockMovementDto(
+        return new StockMovementDetailDto(
             saved.Id,
             saved.BranchId,
             saved.WarehouseId,

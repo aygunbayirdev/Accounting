@@ -2,6 +2,7 @@
 using Accounting.Application.Common.Extensions;
 using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Common.Models;
+using Accounting.Application.Common.Utils;
 using Accounting.Application.ExpenseLists.Dto;
 using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.ExpenseLists.Queries.List;
 
-public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, PagedResult<ExpenseListDto>>
+public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, PagedResult<ExpenseListDetailDto>>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -21,7 +22,7 @@ public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, Pa
         _currentUserService = currentUserService;
     }
 
-    public async Task<PagedResult<ExpenseListDto>> Handle(ListExpenseListsQuery q, CancellationToken ct)
+    public async Task<PagedResult<ExpenseListDetailDto>> Handle(ListExpenseListsQuery q, CancellationToken ct)
     {
         var query = _db.ExpenseLists
             .AsNoTracking()
@@ -61,16 +62,20 @@ public class ListExpenseListsHandler : IRequestHandler<ListExpenseListsQuery, Pa
         var items = await query
             .Skip((q.PageNumber - 1) * q.PageSize)
             .Take(q.PageSize)
-            .Select(x => new ExpenseListDto(
+            .Select(x => new ExpenseListDetailDto(
                 x.Id,
                 x.BranchId,
                 x.Name,
                 x.Status.ToString(),
-                x.CreatedAtUtc
+                new List<ExpenseLineDto>(),
+                DecimalExtensions.RoundAmount(x.Lines.Sum(x => x.Amount)),
+                Convert.ToBase64String(x.RowVersion),
+                x.CreatedAtUtc,
+                x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<ExpenseListDto>(
+        return new PagedResult<ExpenseListDetailDto>(
             Items: items,
             Total: total,
             PageNumber: q.PageNumber,

@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Contacts.Commands.Create;
 
-public class CreateContactHandler : IRequestHandler<CreateContactCommand, ContactDto>
+public class CreateContactHandler : IRequestHandler<CreateContactCommand, ContactDetailDto>
 {
     private readonly IAppDbContext _db;
     public CreateContactHandler(IAppDbContext db) => _db = db;
 
-    public async Task<ContactDto> Handle(CreateContactCommand req, CancellationToken ct)
+    public async Task<ContactDetailDto> Handle(CreateContactCommand req, CancellationToken ct)
     {
         // Auto-generate Code: CRI-{BranchId}-{Sequence}
         var code = await GenerateCodeAsync(req.BranchId, ct);
@@ -76,7 +76,7 @@ public class CreateContactHandler : IRequestHandler<CreateContactCommand, Contac
         _db.Contacts.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        return new ContactDto(
+        return new ContactDetailDto(
             entity.Id,
             entity.BranchId,
             entity.Code,

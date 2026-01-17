@@ -43,7 +43,7 @@ public record InvoiceLineDto(
     decimal GrandTotal
 );
 
-public record InvoiceDto(
+public record InvoiceDetailDto(
     int Id,
     int ContactId,
     string ContactCode,
@@ -75,16 +75,17 @@ public record InvoiceDto(
 
 
     IReadOnlyList<InvoiceLineDto> Lines,
-    string RowVersion,       // base64
-    DateTime CreatedAtUtc,   // Audit
-    DateTime? UpdatedAtUtc,   // Audit
     int Type,
     int BranchId,
     string BranchCode,
     string BranchName,
     string? WaybillNumber,
     DateTime? WaybillDateUtc,
-    DateTime? PaymentDueDateUtc
+    DateTime? PaymentDueDateUtc,
+
+    string RowVersion,       // base64
+    DateTime CreatedAtUtc,   // Audit
+    DateTime? UpdatedAtUtc   // Audit
 );
 
 public record InvoiceListItemDto(
@@ -93,7 +94,7 @@ public record InvoiceListItemDto(
     string ContactCode,
     string ContactName,
     string InvoiceNumber,    // Fatura numarası
-    string Type,             // Sales / Purchase
+    int Type,             // Sales / Purchase
     DateTime DateUtc,
     string Currency,
 
@@ -109,8 +110,10 @@ public record InvoiceListItemDto(
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Balance,
 
-    DateTime CreatedAtUtc,
     int BranchId,
     string BranchCode,
-    string BranchName
+    string BranchName,
+
+    DateTime CreatedAtUtc,   // Audit
+    DateTime? UpdatedAtUtc   // Audit
 );

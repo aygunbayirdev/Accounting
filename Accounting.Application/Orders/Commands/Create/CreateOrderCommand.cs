@@ -7,13 +7,13 @@ using System.Text.Json.Serialization;
 namespace Accounting.Application.Orders.Commands.Create;
 
 public record CreateOrderCommand(
-int ContactId,
-DateTime DateUtc,
-InvoiceType Type,
-string Currency,
-string? Description,
-List<CreateOrderLineDto> Lines
-) : IRequest<OrderDto>;
+    int ContactId,
+    DateTime DateUtc,
+    InvoiceType Type,
+    string Currency,
+    string? Description,
+    List<CreateOrderLineDto> Lines
+) : IRequest<OrderDetailDto>;
 
 public record CreateOrderLineDto(
     int? ItemId,

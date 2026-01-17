@@ -88,7 +88,7 @@ public class InvoicesController : ControllerBase
     // TAM GÜNCELLEME
     [HttpPut("{id:int}")]
     [Authorize(Policy = Permissions.Invoice.Update)]
-    [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(InvoiceDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Update([FromRoute] int id, [FromBody] UpdateInvoiceCommand body, CancellationToken ct)

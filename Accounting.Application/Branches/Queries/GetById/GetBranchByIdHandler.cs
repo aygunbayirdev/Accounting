@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Branches.Queries.GetById;
 
-public record GetBranchByIdQuery(int Id) : IRequest<BranchDto>;
+public record GetBranchByIdQuery(int Id) : IRequest<BranchDetailDto>;
 
-public class GetBranchByIdHandler : IRequestHandler<GetBranchByIdQuery, BranchDto>
+public class GetBranchByIdHandler : IRequestHandler<GetBranchByIdQuery, BranchDetailDto>
 {
     private readonly IAppDbContext _context;
 
@@ -17,7 +17,7 @@ public class GetBranchByIdHandler : IRequestHandler<GetBranchByIdQuery, BranchDt
         _context = context;
     }
 
-    public async Task<BranchDto> Handle(GetBranchByIdQuery request, CancellationToken cancellationToken)
+    public async Task<BranchDetailDto> Handle(GetBranchByIdQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.Branches
             .AsNoTracking()
@@ -28,11 +28,13 @@ public class GetBranchByIdHandler : IRequestHandler<GetBranchByIdQuery, BranchDt
         if (entity == null)
             throw new NotFoundException("Branch", request.Id);
 
-        return new BranchDto(
+        return new BranchDetailDto(
             entity.Id,
             entity.Code,
             entity.Name,
-            Convert.ToBase64String(entity.RowVersion)
+            Convert.ToBase64String(entity.RowVersion),
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc
         );
     }
 }

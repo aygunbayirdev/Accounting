@@ -16,4 +16,4 @@ public record ListStockMovementsQuery(
     int PageNumber = 1,
     int PageSize = PaginationConstants.DefaultPageSize,
     string? Sort = "date:desc" // date/created/item
-) : IRequest<PagedResult<StockMovementDto>>;
+) : IRequest<PagedResult<StockMovementListItemDto>>;

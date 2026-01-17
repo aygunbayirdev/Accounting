@@ -27,8 +27,8 @@ namespace Accounting.Api.Controllers
         // GET /api/branches
         [HttpGet]
         [Authorize(Policy = Permissions.Branch.Read)]
-        [ProducesResponseType(typeof(IReadOnlyList<BranchDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IReadOnlyList<BranchDto>>> List(CancellationToken ct)
+        [ProducesResponseType(typeof(IReadOnlyList<BranchListItemDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<IReadOnlyList<BranchListItemDto>>> List(CancellationToken ct)
         {
             var res = await _mediator.Send(new ListBranchesQuery(), ct);
             return Ok(res);
@@ -36,9 +36,9 @@ namespace Accounting.Api.Controllers
         // GET /api/branches/{id}
         [HttpGet("{id}")]
         [Authorize(Policy = Permissions.Branch.Read)]
-        [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BranchDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<BranchDto>> GetById(int id)
+        public async Task<ActionResult<BranchDetailDto>> GetById(int id)
         {
             var result = await _mediator.Send(new GetBranchByIdQuery(id));
             return Ok(result);
@@ -47,9 +47,9 @@ namespace Accounting.Api.Controllers
         // POST /api/branches
         [HttpPost]
         [Authorize(Policy = Permissions.Branch.Create)]
-        [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BranchDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<BranchDto>> Create(CreateBranchCommand command)
+        public async Task<ActionResult<BranchDetailDto>> Create(CreateBranchCommand command)
         {
             var result = await _mediator.Send(command);
             return Ok(result);
@@ -58,11 +58,11 @@ namespace Accounting.Api.Controllers
         // PUT /api/branches/{id}
         [HttpPut("{id}")]
         [Authorize(Policy = Permissions.Branch.Update)]
-        [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BranchDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BranchDto>> Update(int id, UpdateBranchCommand command)
+        public async Task<ActionResult<BranchDetailDto>> Update(int id, UpdateBranchCommand command)
         {
             if (id != command.Id) return BadRequest();
             var result = await _mediator.Send(command);

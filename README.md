@@ -674,6 +674,36 @@ https://localhost:5001/swagger
 
 ---
 
+## 📝 DTO Naming Convention
+
+Projede tutarlı DTO isimlendirmesi kullanılmaktadır:
+
+| Kullanım | Suffix | Örnek |
+|----------|--------|-------|
+| Tek kayıt (GetById) | `DetailDto` | `InvoiceDetailDto` |
+| Liste item | `ListItemDto` | `InvoiceListItemDto` |
+| Child/Nested | `Dto` | `InvoiceLineDto` |
+| Command result | `Result` | `CreateInvoiceResult` |
+
+### Örnek Kullanım
+
+```csharp
+// Controller
+[HttpGet]
+public Task<PagedResult<InvoiceListItemDto>> List(...)  // Liste
+
+[HttpGet("{id}")]
+public Task<InvoiceDetailDto> GetById(int id)           // Tek kayıt
+
+[HttpPost]
+public Task<CreateInvoiceResult> Create(...)            // Create result
+
+[HttpPut("{id}")]
+public Task<InvoiceDetailDto> Update(...)               // Update response
+```
+
+---
+
 ## 📁 Project Structure
 
 ```

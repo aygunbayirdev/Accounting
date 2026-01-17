@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Accounting.Application.Branches.Queries.List;
 
 public sealed class ListBranchesHandler
-    : IRequestHandler<ListBranchesQuery, IReadOnlyList<BranchDto>>
+    : IRequestHandler<ListBranchesQuery, IReadOnlyList<BranchListItemDto>>
 {
     private readonly IAppDbContext _ctx;
 
@@ -15,7 +15,7 @@ public sealed class ListBranchesHandler
         _ctx = ctx;
     }
 
-    public async Task<IReadOnlyList<BranchDto>> Handle(
+    public async Task<IReadOnlyList<BranchListItemDto>> Handle(
         ListBranchesQuery request,
         CancellationToken ct)
     {
@@ -26,11 +26,12 @@ public sealed class ListBranchesHandler
         var branches = await _ctx.Branches
             .AsNoTracking()
             .OrderBy(b => b.Code)
-            .Select(x => new BranchDto(
+            .Select(x => new BranchListItemDto(
                 x.Id,
                 x.Code,
                 x.Name,
-                Convert.ToBase64String(x.RowVersion ?? Array.Empty<byte>())
+                x.CreatedAtUtc,
+                x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 

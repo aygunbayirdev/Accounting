@@ -5,4 +5,4 @@ using MediatR;
 namespace Accounting.Application.ExpenseLists.Commands.Review;
 
 public record ReviewExpenseListCommand(int Id)
-    : IRequest<ExpenseListDto>;
+    : IRequest<ExpenseListDetailDto>;

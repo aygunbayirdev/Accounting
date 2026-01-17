@@ -89,6 +89,7 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
                 i.TotalGross,
                 i.Balance,
                 i.CreatedAtUtc,
+                i.UpdatedAtUtc,
                 ContactCode = i.Contact.Code,
                 ContactName = i.Contact.Name,
                 i.BranchId,
@@ -108,18 +109,19 @@ public class ListInvoicesHandler : IRequestHandler<ListInvoicesQuery, PagedResul
             i.ContactId,
             i.ContactCode,
             i.ContactName,
-            i.InvoiceNumber ?? "",
-            i.Type.ToString(),
+            i.InvoiceNumber ?? string.Empty,
+            (int)i.Type,
             i.DateUtc,
             i.Currency,
             i.TotalNet,
             i.TotalVat,
             i.TotalGross,
             i.Balance,
-            i.CreatedAtUtc,
             i.BranchId,
             i.BranchCode,
-            i.BranchName
+            i.BranchName,
+            i.CreatedAtUtc,
+            i.UpdatedAtUtc
         )).ToList();
 
         var totals = new InvoicePagedTotals(

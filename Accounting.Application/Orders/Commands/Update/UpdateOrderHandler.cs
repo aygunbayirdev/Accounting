@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Update;
 
-public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
+public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -22,11 +22,12 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
         _currentUserService = currentUserService;
     }
 
-    public async Task<OrderDto> Handle(UpdateOrderCommand r, CancellationToken ct)
+    public async Task<OrderDetailDto> Handle(UpdateOrderCommand r, CancellationToken ct)
     {
         var order = await _db.Orders
             .ApplyBranchFilter(_currentUserService)
             .Include(o => o.Lines)
+            .Include(o => o.Contact)
             .FirstOrDefaultAsync(o => o.Id == r.Id, ct);
 
         if (order is null) throw new NotFoundException("Order", r.Id);
@@ -106,12 +107,12 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
             throw new ConcurrencyConflictException("Sipariş başka bir kullanıcı tarafından değiştirildi.");
         }
 
-        return new OrderDto(
+        return new OrderDetailDto(
             order.Id,
             order.BranchId,
             order.OrderNumber,
             order.ContactId,
-            "",
+            order.Contact.Name,
             order.DateUtc,
             order.Status,
             order.TotalNet,
@@ -120,8 +121,9 @@ public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, OrderDto>
             order.Currency,
             order.Description,
             order.Lines.Select(x => new OrderLineDto(x.Id, x.ItemId, null, x.Description, x.Quantity, x.UnitPrice, x.VatRate, x.Total)).ToList(),
+            Convert.ToBase64String(order.RowVersion),
             order.CreatedAtUtc,
-            Convert.ToBase64String(order.RowVersion)
+            order.UpdatedAtUtc
         );
     }
 }

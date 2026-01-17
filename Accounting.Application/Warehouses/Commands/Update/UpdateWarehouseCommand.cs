@@ -10,4 +10,4 @@ public record UpdateWarehouseCommand(
     string Name,
     bool IsDefault,
     string RowVersion
-) : IRequest<WarehouseDto>;
+) : IRequest<WarehouseDetailDto>;

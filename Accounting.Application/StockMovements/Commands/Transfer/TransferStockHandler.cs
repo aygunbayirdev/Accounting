@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.StockMovements.Commands.Transfer;
 
-public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferStockCommand, StockTransferDto>
+public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferStockCommand, StockTransferDetailDto>
 {
-    public async Task<StockTransferDto> Handle(TransferStockCommand r, CancellationToken ct)
+    public async Task<StockTransferDetailDto> Handle(TransferStockCommand r, CancellationToken ct)
     {
         // 1. Validation & Parsing
         if (r.SourceWarehouseId == r.TargetWarehouseId)
@@ -122,6 +122,6 @@ public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferSt
             throw new ConcurrencyConflictException("Transfer sırasında stok kaydı değişti. Lütfen tekrar deneyin.");
         }
 
-        return new StockTransferDto(true, outMovement.Id, inMovement.Id, "Transfer başarılı.");
+        return new StockTransferDetailDto(true, outMovement.Id, inMovement.Id, "Transfer başarılı.");
     }
 }

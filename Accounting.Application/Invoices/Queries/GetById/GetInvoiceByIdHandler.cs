@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Invoices.Queries.GetById;
 
-public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, InvoiceDto>
+public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, InvoiceDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -20,7 +20,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
         _currentUserService = currentUserService;
     }
 
-    public async Task<InvoiceDto> Handle(GetInvoiceByIdQuery q, CancellationToken cancellationToken)
+    public async Task<InvoiceDetailDto> Handle(GetInvoiceByIdQuery q, CancellationToken cancellationToken)
     {
         var inv = await _db.Invoices
             .AsNoTracking()
@@ -56,7 +56,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             ))
             .ToList();
 
-        return new InvoiceDto(
+        return new InvoiceDetailDto(
             inv.Id,
             inv.ContactId,
             inv.Contact.Code,
@@ -72,16 +72,16 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             inv.TotalGross,
             inv.Balance,
             lines,
-            Convert.ToBase64String(inv.RowVersion),
-            inv.CreatedAtUtc,
-            inv.UpdatedAtUtc,
             (int)inv.Type,
             inv.BranchId,
             inv.Branch.Code,
             inv.Branch.Name,
             inv.WaybillNumber,
             inv.WaybillDateUtc,
-            inv.PaymentDueDateUtc
+            inv.PaymentDueDateUtc,
+            Convert.ToBase64String(inv.RowVersion),
+            inv.CreatedAtUtc,
+            inv.UpdatedAtUtc
         );
     }
 }

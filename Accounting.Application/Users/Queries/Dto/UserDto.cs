@@ -8,7 +8,8 @@ public record UserListItemDto(
     int? BranchId,
     string? BranchName,
     bool IsActive,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record UserDetailDto(

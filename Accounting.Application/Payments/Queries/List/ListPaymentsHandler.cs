@@ -37,9 +37,6 @@ namespace Accounting.Application.Payments.Queries.List
             if (q.ContactId is int conId) query = query.Where(p => p.ContactId == conId);
             if (q.Direction is not null) query = query.Where(p => p.Direction == q.Direction);
 
-            if (TryParseUtc(q.DateFromUtc, out var fromUtc)) query = query.Where(p => p.DateUtc >= fromUtc);
-            if (TryParseUtc(q.DateToUtc, out var toUtc)) query = query.Where(p => p.DateUtc <= toUtc);
-
             if (!string.IsNullOrWhiteSpace(q.Currency))
             {
                 var curr = q.Currency.Trim().ToUpperInvariant();
@@ -85,6 +82,7 @@ namespace Accounting.Application.Payments.Queries.List
                     p.Currency,
                     p.Description,
                     p.CreatedAtUtc,
+                    p.UpdatedAtUtc
                 });
 
             var pageData = await pageQuery.ToListAsync(ct);
@@ -108,7 +106,8 @@ namespace Accounting.Application.Payments.Queries.List
                 p.Amount,
                 p.Currency,
                 p.Description,
-                p.CreatedAtUtc
+                p.CreatedAtUtc,
+                p.UpdatedAtUtc
             )).ToList();
 
             var totals = new PagedTotals(
@@ -118,9 +117,5 @@ namespace Accounting.Application.Payments.Queries.List
 
             return new PagedResult<PaymentListItemDto>(total, q.PageNumber, q.PageSize, items, totals);
         }
-
-        private static bool TryParseUtc(string? s, out DateTime value)
-            => DateTime.TryParse(s, CultureInfo.InvariantCulture,
-                DateTimeStyles.AdjustToUniversal, out value);
     }
 }

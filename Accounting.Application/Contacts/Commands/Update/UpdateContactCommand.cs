@@ -27,4 +27,4 @@ public record UpdateContactCommand(
     CompanyDetailsDto? CompanyDetails,
     PersonDetailsDto? PersonDetails,
     string RowVersion // base64
-    ) : IRequest<ContactDto>;
+    ) : IRequest<ContactDetailDto>;

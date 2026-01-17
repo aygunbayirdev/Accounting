@@ -7,4 +7,4 @@ public record CreateWarehouseCommand(
     string Code,
     string Name,
     bool IsDefault
-) : IRequest<WarehouseDto>;
+) : IRequest<WarehouseDetailDto>;

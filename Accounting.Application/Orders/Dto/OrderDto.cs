@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Accounting.Application.Orders.Dto;
 
-public record OrderDto(
+public record OrderDetailDto(
     int Id,
     int BranchId,
     string OrderNumber,
@@ -25,8 +25,33 @@ public record OrderDto(
     string Currency,
     string? Description,
     List<OrderLineDto> Lines,
+    string RowVersion,
     DateTime CreatedAtUtc,
-    string RowVersion
+    DateTime? UpdatedAtUtc
+);
+
+public record OrderListItemDto(
+    int Id,
+    int BranchId,
+    string OrderNumber,
+    int ContactId,
+    string ContactName,
+    DateTime DateUtc,
+    OrderStatus Status,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalNet,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalVat,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal TotalGross,
+
+    string Currency,
+    string? Description,
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record OrderLineDto(
@@ -42,5 +67,7 @@ public record OrderLineDto(
     decimal UnitPrice,
 
     int VatRate,
+
+    [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Total
 );

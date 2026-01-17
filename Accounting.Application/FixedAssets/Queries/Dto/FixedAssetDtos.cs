@@ -15,7 +15,10 @@ public sealed record FixedAssetListItemDto(
     int UsefulLifeYears,
 
     [property: JsonConverter(typeof(PercentJsonConverter))]
-    decimal DepreciationRatePercent
+    decimal DepreciationRatePercent,
+
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public sealed record FixedAssetDetailDto(
@@ -35,6 +38,5 @@ public sealed record FixedAssetDetailDto(
     bool IsDeleted,
     string RowVersionBase64,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc,
-    DateTime? DeletedAtUtc
+    DateTime? UpdatedAtUtc
 );

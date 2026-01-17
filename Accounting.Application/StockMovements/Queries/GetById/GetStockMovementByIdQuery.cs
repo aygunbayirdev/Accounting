@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Accounting.Application.StockMovements.Queries.GetById;
 
-public record GetStockMovementByIdQuery(int Id) : IRequest<StockMovementDto>;
+public record GetStockMovementByIdQuery(int Id) : IRequest<StockMovementDetailDto>;

@@ -1,6 +1,6 @@
 namespace Accounting.Application.CompanySettings.Dto;
 
-public record CompanySettingsDto(
+public record CompanySettingsDetailDto(
     int Id,
     string Title,
     string? TaxNumber,

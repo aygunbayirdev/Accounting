@@ -70,8 +70,7 @@ public sealed class CreateFixedAssetHandler
             entity.IsDeleted,
             Convert.ToBase64String(entity.RowVersion),
             entity.CreatedAtUtc,
-            entity.UpdatedAtUtc,
-            entity.DeletedAtUtc
+            entity.UpdatedAtUtc
         );
     }
 }

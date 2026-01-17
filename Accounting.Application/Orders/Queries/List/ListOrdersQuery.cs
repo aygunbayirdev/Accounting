@@ -12,4 +12,4 @@ public record ListOrdersQuery(
     OrderStatus? Status = null,
     int Page = PaginationConstants.DefaultPage,
     int PageSize = PaginationConstants.DefaultPageSize
-) : IRequest<PagedResult<OrderDto>>;
+) : IRequest<PagedResult<OrderListItemDto>>;

@@ -1,4 +1,5 @@
 ﻿using Accounting.Api.Contracts;
+using Accounting.Application.Common.Models;
 using Accounting.Application.Contacts.Commands.Create;
 using Accounting.Application.Contacts.Commands.Delete;
 using Accounting.Application.Contacts.Commands.Update;
@@ -21,7 +22,7 @@ public class ContactsController : ControllerBase
 
     [HttpPost]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Create)]
-    [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ContactDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Create([FromBody] CreateContactCommand body, CancellationToken ct)
     {
@@ -31,7 +32,7 @@ public class ContactsController : ControllerBase
 
     [HttpGet("{id:int}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Read)]
-    [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ContactDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
     {
@@ -41,7 +42,7 @@ public class ContactsController : ControllerBase
 
     [HttpGet]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Read)]
-    [ProducesResponseType(typeof(Accounting.Application.Common.Models.PagedResult<ContactListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<ContactListItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult> List(
         [FromQuery] int? branchId,
         [FromQuery] string? search,
@@ -60,7 +61,7 @@ public class ContactsController : ControllerBase
 
     [HttpPut("{id:int}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = Accounting.Domain.Constants.Permissions.Contact.Update)]
-    [ProducesResponseType(typeof(ContactDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ContactDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Update([FromRoute] int id, [FromBody] UpdateContactCommand body, CancellationToken ct)

@@ -12,11 +12,11 @@ public record UpdateCategoryCommand(
     string? Description,
     string? Color,
     string RowVersion
-) : IRequest<CategoryDto>;
+) : IRequest<CategoryDetailDto>;
 
-public class UpdateCategoryHandler(IAppDbContext db) : IRequestHandler<UpdateCategoryCommand, CategoryDto>
+public class UpdateCategoryHandler(IAppDbContext db) : IRequestHandler<UpdateCategoryCommand, CategoryDetailDto>
 {
-    public async Task<CategoryDto> Handle(UpdateCategoryCommand r, CancellationToken ct)
+    public async Task<CategoryDetailDto> Handle(UpdateCategoryCommand r, CancellationToken ct)
     {
         var category = await db.Categories.FirstOrDefaultAsync(x => x.Id == r.Id && !x.IsDeleted, ct);
         if (category is null)
@@ -40,7 +40,7 @@ public class UpdateCategoryHandler(IAppDbContext db) : IRequestHandler<UpdateCat
             throw new ConcurrencyConflictException("Kategori başka bir kullanıcı tarafından değiştirildi.");
         }
 
-        return new CategoryDto(
+        return new CategoryDetailDto(
             category.Id,
             category.Name,
             category.Description,

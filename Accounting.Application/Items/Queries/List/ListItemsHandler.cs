@@ -75,7 +75,8 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
                                x.DefaultWithholdingRate ?? 0,
                                x.PurchasePrice == null ? null : x.PurchasePrice.Value,
                                x.SalesPrice == null ? null : x.SalesPrice.Value,
-                               x.CreatedAtUtc))
+                               x.CreatedAtUtc,
+                               x.UpdatedAtUtc))
                            .ToListAsync(ct);
 
         return new PagedResult<ItemListItemDto>(

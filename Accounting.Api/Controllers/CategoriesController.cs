@@ -18,25 +18,25 @@ public class CategoriesController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Permissions.Category.Read)]
-    public async Task<ActionResult<PagedResult<CategoryDto>>> GetList(
+    public async Task<ActionResult<PagedResult<CategoryListItemDto>>> GetList(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)
     {
-        return Ok(await mediator.Send(new GetCategoriesQuery(search, page, pageSize), ct));
+        return Ok(await mediator.Send(new ListCategoriesQuery(search, page, pageSize), ct));
     }
 
     [HttpPost]
     [Authorize(Policy = Permissions.Category.Create)]
-    public async Task<ActionResult<CategoryDto>> Create(CreateCategoryCommand command, CancellationToken ct)
+    public async Task<ActionResult<CategoryDetailDto>> Create(CreateCategoryCommand command, CancellationToken ct)
     {
         return Ok(await mediator.Send(command, ct));
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Permissions.Category.Update)]
-    public async Task<ActionResult<CategoryDto>> Update(int id, UpdateCategoryCommand command, CancellationToken ct)
+    public async Task<ActionResult<CategoryDetailDto>> Update(int id, UpdateCategoryCommand command, CancellationToken ct)
     {
         if (id != command.Id) return BadRequest("ID mismatch");
         return Ok(await mediator.Send(command, ct));

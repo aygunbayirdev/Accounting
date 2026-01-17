@@ -12,7 +12,7 @@ public record UpdateOrderCommand(
     string? Description,
     List<UpdateOrderLineDto> Lines,
     string RowVersion
-) : IRequest<OrderDto>;
+) : IRequest<OrderDetailDto>;
 
 public record UpdateOrderLineDto(
     int? Id, // Null = New Line

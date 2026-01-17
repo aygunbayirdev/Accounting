@@ -9,9 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Orders.Commands.Create;
 
-public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUserService) : IRequestHandler<CreateOrderCommand, OrderDto>
+public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUserService) : IRequestHandler<CreateOrderCommand, OrderDetailDto>
 {
-    public async Task<OrderDto> Handle(CreateOrderCommand r, CancellationToken ct)
+    public async Task<OrderDetailDto> Handle(CreateOrderCommand r, CancellationToken ct)
     {
         var branchId = currentUserService.BranchId ?? throw new UnauthorizedAccessException();
 
@@ -73,7 +73,7 @@ public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUse
         await db.SaveChangesAsync(ct);
 
         // Return DTO
-        return new OrderDto(
+        return new OrderDetailDto(
             order.Id,
             order.BranchId,
             order.OrderNumber,
@@ -87,8 +87,9 @@ public class CreateOrderHandler(IAppDbContext db, ICurrentUserService currentUse
             order.Currency,
             order.Description,
             order.Lines.Select(x => new OrderLineDto(x.Id, x.ItemId, null, x.Description, x.Quantity, x.UnitPrice, x.VatRate, x.Total)).ToList(),
+            Convert.ToBase64String(order.RowVersion),
             order.CreatedAtUtc,
-            Convert.ToBase64String(order.RowVersion)
+            order.UpdatedAtUtc
         );
     }
 }

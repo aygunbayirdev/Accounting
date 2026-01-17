@@ -26,13 +26,14 @@ This document defines the coding standards, architectural patterns, and best pra
   - Use **native types** (`DateTime`, `DateTime?`, `enum`) in Command/Query DTOs.
   - .NET model binding handles JSON ↔ DateTime/Enum conversion automatically.
   - **DO NOT** use string for dates or enums in DTOs - no manual parsing needed.
-  - Money values remain `string` (e.g., "1250.00") for precision control.
+  - Money values use `decimal` with `JsonConverter` attribute.
   ```csharp
   // ✅ CORRECT
   public record CreateInvoiceCommand(
       DateTime DateUtc,
       InvoiceType Type,
-      string Amount  // Money stays string
+      [property: JsonConverter(typeof(AmountJsonConverter))]
+      decimal Amount
   );
   
   // ❌ WRONG - Don't use string for dates/enums
@@ -41,6 +42,43 @@ This document defines the coding standards, architectural patterns, and best pra
       string Type      // BAD
   );
   ```
+
+### DTO Naming Convention
+
+| Kullanım | Suffix | Açıklama |
+|----------|--------|----------|
+| Tek kayıt (GetById, Create, Update response) | `DetailDto` | Tüm alanlar + RowVersion |
+| Liste item (List response) | `ListItemDto` | Özet alanlar, RowVersion yok |
+| Command/Query result | `Result` | İşlem sonucu |
+| Nested/Child DTO | `Dto` | Alt kayıtlar (Line, Details) |
+
+**Örnekler:**
+```csharp
+// ✅ DOĞRU
+InvoiceDetailDto      // GetById, Update response
+InvoiceListItemDto    // List response
+InvoiceLineDto        // Child record
+CreateInvoiceResult   // Command result
+
+// ❌ YANLIŞ
+InvoiceDto            // Belirsiz - DetailDto mı ListItemDto mu?
+InvoiceListDto        // ListItemDto olmalı
+```
+
+**Klasör Yapısı:**
+```
+Accounting.Application/{Entity}/
+├── Commands/
+│   ├── Create/
+│   │   ├── CreateInvoiceCommand.cs
+│   │   └── CreateInvoiceHandler.cs
+│   └── Update/
+├── Queries/
+│   ├── Dto/
+│   │   └── InvoiceDtos.cs  // DetailDto + ListItemDto + LineDto
+│   ├── GetById/
+│   └── List/
+```
 
 ## 3. Domain Patterns
 

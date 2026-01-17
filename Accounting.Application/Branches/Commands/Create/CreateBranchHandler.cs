@@ -5,9 +5,9 @@ using MediatR;
 
 namespace Accounting.Application.Branches.Commands.Create;
 
-public record CreateBranchCommand(string Code, string Name) : IRequest<BranchDto>;
+public record CreateBranchCommand(string Code, string Name) : IRequest<BranchDetailDto>;
 
-public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, BranchDto>
+public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, BranchDetailDto>
 {
     private readonly IAppDbContext _context;
 
@@ -16,7 +16,7 @@ public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, BranchDt
         _context = context;
     }
 
-    public async Task<BranchDto> Handle(CreateBranchCommand request, CancellationToken cancellationToken)
+    public async Task<BranchDetailDto> Handle(CreateBranchCommand request, CancellationToken cancellationToken)
     {
         var entity = new Branch
         {
@@ -28,11 +28,13 @@ public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, BranchDt
         _context.Branches.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new BranchDto(
+        return new BranchDetailDto(
             entity.Id, 
             entity.Code, 
             entity.Name, 
-            Convert.ToBase64String(entity.RowVersion ?? Array.Empty<byte>())
+            Convert.ToBase64String(entity.RowVersion ?? Array.Empty<byte>()),
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc
         );
     }
 }

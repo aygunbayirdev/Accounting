@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Warehouses.Queries.List;
 
-public class ListWarehousesHandler : IRequestHandler<ListWarehousesQuery, PagedResult<WarehouseDto>>
+public class ListWarehousesHandler : IRequestHandler<ListWarehousesQuery, PagedResult<WarehouseListItemDto>>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -19,7 +19,7 @@ public class ListWarehousesHandler : IRequestHandler<ListWarehousesQuery, PagedR
         _db = db;
         _currentUserService = currentUserService;
     }
-    public async Task<PagedResult<WarehouseDto>> Handle(ListWarehousesQuery r, CancellationToken ct)
+    public async Task<PagedResult<WarehouseListItemDto>> Handle(ListWarehousesQuery r, CancellationToken ct)
     {
         IQueryable<Warehouse> q = _db.Warehouses
             .AsNoTracking()
@@ -49,18 +49,17 @@ public class ListWarehousesHandler : IRequestHandler<ListWarehousesQuery, PagedR
         var items = await q
             .Skip((r.PageNumber - 1) * r.PageSize)
             .Take(r.PageSize)
-            .Select(x => new WarehouseDto(
+            .Select(x => new WarehouseListItemDto(
                 x.Id,
                 x.BranchId,
                 x.Code,
                 x.Name,
                 x.IsDefault,
-                Convert.ToBase64String(x.RowVersion),
                 x.CreatedAtUtc,
                 x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<WarehouseDto>(total, r.PageNumber, r.PageSize, items, null);
+        return new PagedResult<WarehouseListItemDto>(total, r.PageNumber, r.PageSize, items, null);
     }
 }

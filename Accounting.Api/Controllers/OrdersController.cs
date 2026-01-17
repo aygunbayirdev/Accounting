@@ -21,7 +21,7 @@ namespace Accounting.Api.Controllers;
 public class OrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResult<OrderDto>>> GetList(
+    public async Task<ActionResult<PagedResult<OrderListItemDto>>> GetList(
         [FromQuery] int? branchId,
         [FromQuery] int? contactId,
         [FromQuery] OrderStatus? status,
@@ -34,20 +34,20 @@ public class OrdersController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<OrderDto>> GetById(int id, CancellationToken ct)
+    public async Task<ActionResult<OrderDetailDto>> GetById(int id, CancellationToken ct)
     {
         return Ok(await mediator.Send(new GetOrderByIdQuery(id), ct));
     }
 
     [HttpPost]
-    public async Task<ActionResult<OrderDto>> Create(CreateOrderCommand command, CancellationToken ct)
+    public async Task<ActionResult<OrderDetailDto>> Create(CreateOrderCommand command, CancellationToken ct)
     {
         var result = await mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<OrderDto>> Update(int id, UpdateOrderCommand command, CancellationToken ct)
+    public async Task<ActionResult<OrderDetailDto>> Update(int id, UpdateOrderCommand command, CancellationToken ct)
     {
         if (id != command.Id) return BadRequest("ID mismatch");
         return Ok(await mediator.Send(command, ct));

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Accounting.Application.Contacts.Queries.GetById;
 
-public class GetContactByIdHandler : IRequestHandler<GetContactByIdQuery, ContactDto>
+public class GetContactByIdHandler : IRequestHandler<GetContactByIdQuery, ContactDetailDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
@@ -19,7 +19,7 @@ public class GetContactByIdHandler : IRequestHandler<GetContactByIdQuery, Contac
         _currentUserService = currentUserService;
     }
 
-    public async Task<ContactDto> Handle(GetContactByIdQuery q, CancellationToken ct)
+    public async Task<ContactDetailDto> Handle(GetContactByIdQuery q, CancellationToken ct)
     {
         var c = await _db.Contacts
             .AsNoTracking()
@@ -31,7 +31,7 @@ public class GetContactByIdHandler : IRequestHandler<GetContactByIdQuery, Contac
         if (c is null)
             throw new NotFoundException("Contact", q.Id);
 
-        return new ContactDto(
+        return new ContactDetailDto(
             c.Id, 
             c.BranchId, 
             c.Code, 

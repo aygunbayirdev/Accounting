@@ -90,7 +90,8 @@ public class ListContactsHandler : IRequestHandler<ListContactsQuery, PagedResul
                 x.IsEmployee,
                 x.IsRetail,
                 x.Email,
-                x.CreatedAtUtc
+                x.CreatedAtUtc,
+                x.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 

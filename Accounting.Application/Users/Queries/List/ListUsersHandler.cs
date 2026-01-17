@@ -60,7 +60,8 @@ public class ListUsersHandler : IRequestHandler<ListUsersQuery, PagedResult<User
                 u.BranchId,
                 u.Branch != null ? u.Branch.Name : null,
                 u.IsActive,
-                u.CreatedAtUtc
+                u.CreatedAtUtc,
+                u.UpdatedAtUtc
             ))
             .ToListAsync(ct);
 

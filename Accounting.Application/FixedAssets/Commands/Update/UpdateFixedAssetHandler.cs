@@ -98,8 +98,7 @@ public sealed class UpdateFixedAssetHandler
             fresh.IsDeleted,
             Convert.ToBase64String(fresh.RowVersion),
             fresh.CreatedAtUtc,
-            fresh.UpdatedAtUtc,
-            fresh.DeletedAtUtc
+            fresh.UpdatedAtUtc
         );
     }
 }

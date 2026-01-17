@@ -18,4 +18,4 @@ public record CreateStockMovementCommand(
     DateTime? TransactionDateUtc,
     string? Note,
     int? InvoiceId = null            // Fatura kaynaklı hareketler için
-) : IRequest<StockMovementDto>;
+) : IRequest<StockMovementDetailDto>;

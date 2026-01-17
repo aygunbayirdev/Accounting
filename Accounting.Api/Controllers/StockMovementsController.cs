@@ -19,7 +19,7 @@ public class StockMovementsController(IMediator mediator) : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Permissions.StockMovement.Read)]
-    [ProducesResponseType(typeof(PagedResult<StockMovementDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<StockMovementListItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult> List([FromQuery] ListStockMovementsQuery q, CancellationToken ct)
     {
         var res = await _mediator.Send(q, ct);
@@ -28,7 +28,7 @@ public class StockMovementsController(IMediator mediator) : ControllerBase
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = Permissions.StockMovement.Read)]
-    [ProducesResponseType(typeof(StockMovementDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(StockMovementDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById([FromRoute] int id, CancellationToken ct)
     {
@@ -38,7 +38,7 @@ public class StockMovementsController(IMediator mediator) : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = Permissions.StockMovement.Create)]
-    [ProducesResponseType(typeof(StockMovementDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(StockMovementDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Create([FromBody] CreateStockMovementCommand cmd, CancellationToken ct)
     {

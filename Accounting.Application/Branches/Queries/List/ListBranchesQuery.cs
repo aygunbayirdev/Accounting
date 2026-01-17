@@ -4,4 +4,4 @@ using MediatR;
 namespace Accounting.Application.Branches.Queries.List;
 
 public sealed record ListBranchesQuery
-    : IRequest<IReadOnlyList<BranchDto>>;
+    : IRequest<IReadOnlyList<BranchListItemDto>>;
