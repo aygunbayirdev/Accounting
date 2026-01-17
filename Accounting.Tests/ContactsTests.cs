@@ -37,7 +37,7 @@ public class ContactsTests
 
         // CreateContactHandler sadece db alır
         var handler = new CreateContactHandler(db);
-        
+
         var command = new CreateContactCommand(
             BranchId: 1,
             IsCustomer: true,
@@ -87,7 +87,7 @@ public class ContactsTests
         await db.SaveChangesAsync();
 
         var handler = new UpdateContactHandler(db, userService);
-        
+
         var command = new UpdateContactCommand(
             Id: contact.Id,
             IsCustomer: true,
@@ -190,18 +190,19 @@ public class ContactsTests
 
         var handler = new ListContactsHandler(db, userService);
         var query = new ListContactsQuery(
-            BranchId: 1, 
-            Search: null, 
-            IsCustomer: null, 
-            IsVendor: null, 
-            IsEmployee: null, 
+            BranchId: 1,
+            Search: null,
+            Sort: null,
+            IsCustomer: null,
+            IsVendor: null,
+            IsEmployee: null,
             IsRetail: null,
-            Page: 1,
+            PageNumber: 1,
             PageSize: 3
         );
         var result = await handler.Handle(query, CancellationToken.None);
 
-        Assert.Equal(5, result.TotalCount);
+        Assert.Equal(5, result.Total);
         Assert.Equal(3, result.Items.Count);
     }
 }

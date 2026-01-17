@@ -55,7 +55,8 @@ public class PaymentsTests
             DateUtc: DateTime.UtcNow.ToString("O"),
             Direction: PaymentDirection.In,
             Amount: "100.50",
-            Currency: "TRY"
+            Currency: "TRY",
+            Description: null
         );
 
         var result = await handler.Handle(command, CancellationToken.None);

@@ -31,12 +31,12 @@ namespace Accounting.Tests
         {
             var userService = new FakeCurrentUserService(1);
             var audit = new AuditSaveChangesInterceptor(userService);
-            using (var db = new AppDbContext(_options, audit, userService)) 
+            using (var db = new AppDbContext(_options, audit, userService))
             {
                 // Seed Dependencies
                 var branch = new Branch { Id = 1, Name = "Test Branch", Code = "BR-01" };
                 db.Branches.Add(branch);
-                
+
                 var contact = new Contact { Id = 1, Name = "Test Customer", Code = "CUS-001", IsCustomer = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
                 db.Contacts.Add(contact);
 
@@ -63,7 +63,7 @@ namespace Accounting.Tests
                 var resultId = await handler.Handle(cmd, CancellationToken.None);
 
                 Assert.NotEqual(0, resultId);
-                
+
                 var cheque = await db.Cheques.FindAsync(resultId);
                 Assert.NotNull(cheque);
                 Assert.Equal("FINAL-001", cheque.ChequeNumber);
@@ -80,7 +80,7 @@ namespace Accounting.Tests
                 // Seed Dependencies
                 var branch = new Branch { Id = 1, Name = "Test Branch", Code = "BR-01" };
                 db.Branches.Add(branch);
-                
+
                 var contact = new Contact { Id = 5, Name = "Test Vendor", Code = "VEN-005", IsVendor = true, BranchId = 1, RowVersion = Array.Empty<byte>() };
                 db.Contacts.Add(contact);
 
@@ -131,8 +131,10 @@ namespace Accounting.Tests
                     CategoryId: null,
                     Code: "ITM-001",
                     Name: "Dual Price Product",
+                    Type: 1, // Inventory
                     Unit: "Pcs",
                     VatRate: 18,
+                    DefaultWithholdingRate: null,
                     PurchasePrice: "85.50",
                     SalesPrice: "120.00"
                 );
