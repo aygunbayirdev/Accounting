@@ -1,0 +1,141 @@
+﻿
+================================================================================
+FILE: CashBankAccountType.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum CashBankAccountType 
+{ 
+    Cash = 1,
+    Bank = 2 
+}
+
+================================================================================
+FILE: ChequeDirection.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum ChequeDirection
+{
+    Inbound = 1,  // Müşteriden Alınan (Giriş)
+    Outbound = 2  // Tedarikçiye Verilen / Kendi Evrağımız (Çıkış)
+}
+
+
+================================================================================
+FILE: ChequeStatus.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum ChequeStatus
+{
+    Pending = 1,  // Portföyde / Bekliyor
+    Paid = 2,     // Tahsil Edildi / Ödendi
+    Endorsed = 3, // Ciro Edildi (Sadece Inbound için)
+    Bounced = 4,  // Karşılıksız / Protestolu
+    Cancelled = 5 // İptal / İade
+}
+
+
+================================================================================
+FILE: ChequeType.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum ChequeType
+{
+    Cheque = 1,       // Çek
+    PromissoryNote = 2 // Senet
+}
+
+
+================================================================================
+FILE: ExpenseListStatus.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum ExpenseListStatus 
+{ 
+    Draft = 1,
+    Reviewed = 2, 
+    Posted = 3 
+}
+
+
+================================================================================
+FILE: InvoiceType.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+public enum InvoiceType
+{
+    Sales = 1,
+    Purchase = 2,
+    SalesReturn = 3,
+    PurchaseReturn = 4,
+    Expense = 5 // Masraf / Gider Faturası
+}
+
+
+================================================================================
+FILE: ItemType.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum ItemType
+{
+    Inventory = 1, // Stoklu Ürün (Fiziksel)
+    Service = 2    // Hizmet (Stok takibi yapılmaz)
+}
+
+
+================================================================================
+FILE: OrderStatus.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum OrderStatus
+{
+    Draft = 1,      // Taslak / Teklif aşaması
+    Approved = 2,   // Onaylandı / Sipariş kesinleşti
+    Invoiced = 3,   // Faturalandı / Tamamlandı
+    Cancelled = 9   // İptal edildi
+}
+
+
+================================================================================
+FILE: PaymentDirection.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum PaymentDirection { 
+    In = 1,
+    Out = 2 
+}
+
+================================================================================
+FILE: StockMovementType.cs
+================================================================================
+
+namespace Accounting.Domain.Enums;
+
+public enum StockMovementType
+{
+    PurchaseIn = 1,      // Alış / giriş
+    SalesOut = 2,        // Satış / çıkış
+    AdjustmentIn = 3,    // Sayım fazlası
+    AdjustmentOut = 4,   // Sayım eksiği
+    SalesReturn = 5,     // Satış iadesi (Giriş)
+    PurchaseReturn = 6,   // Alış iadesi (Çıkış)
+    TransferOut = 7,     // Transfer çıkışı
+    TransferIn = 8       // Transfer girişi
+}
+
