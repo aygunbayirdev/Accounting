@@ -43,13 +43,66 @@ This document defines the coding standards, architectural patterns, and best pra
   ```
 
 ## 3. Domain Patterns
-- **Money Value Object**:
-  - **NEVER** use raw `decimal` formatting manually.
-  - Use `Accounting.Application.Common.Utils.Money` static helper.
-  - `Money.R2(val)` / `Money.R4(val)` for rounding.
-  - `Money.S2(val)` / `Money.S4(val)` for string output.
-  - **Rounding Policy**: `MidpointRounding.AwayFromZero` (Example: 2.5 -> 3, -2.5 -> -3).
-- **Entities**:
+
+### Decimal Handling & JSON Serialization
+
+Projede **tüm finansal değerler** (tutar, miktar, fiyat) için tutarlı bir yaklaşım kullanılmaktadır:
+
+#### Temel Prensipler
+- **DTO'larda `decimal` tipi kullan**, string değil
+- **`JsonConverter` attribute** ile otomatik formatlama
+- **Handler'larda manuel dönüşüm YAPMA** - serialization katmanı halleder
+
+#### JSON Converters (Accounting.Application.Common.JsonConverters/)
+
+| Converter | Hassasiyet | Kullanım | Örnek |
+|-----------|------------|----------|-------|
+| `AmountJsonConverter` | 2 hane | Tutar, Toplam, Bakiye | `"1250.50"` |
+| `QuantityJsonConverter` | 3 hane | Miktar, Adet | `"1.500"` |
+| `UnitPriceJsonConverter` | 4 hane | Birim Fiyat | `"10.5045"` |
+| `PercentJsonConverter` | 2 hane | İskonto, Vergi Oranı | `"18.00"` |
+
+#### DTO Örneği
+```csharp
+public record InvoiceLineDto(
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Qty,
+    
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
+    decimal UnitPrice,
+    
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Total
+);
+```
+
+#### Handler'da Kullanım
+```csharp
+// ✅ DOĞRU - Direkt decimal ata, converter halleder
+return new InvoiceLineDto(
+    Qty: line.Qty,
+    UnitPrice: line.UnitPrice,
+    Total: line.Total
+);
+
+// ❌ YANLIŞ - Manuel string dönüşümü YAPMA
+return new InvoiceLineDto(
+    Qty: Money.S3(line.Qty),  // YAPMA!
+    ...
+);
+```
+
+#### DecimalExtensions (Hesaplama için)
+Handler'larda hesaplama yaparken yuvarlama gerekiyorsa:
+```csharp
+var lineNet = DecimalExtensions.RoundAmount(qty * unitPrice);  // 2 hane
+var roundedQty = DecimalExtensions.RoundQuantity(qty);         // 3 hane
+```
+
+### Legacy Money Helper (Deprecated)
+`Money.S2()`, `Money.R4()` gibi metodlar **artık kullanılmıyor**. Yeni kod için `DecimalExtensions` ve `JsonConverter` pattern'i kullanın.
+
+### Entities
   - Keep entities **Rich** where possible (methods for logic), but public setters are currently permitted for practical CRUD simplification in this project.
   - **Soft Delete**: Entities implementing `ISoftDelete` must set `IsDeleted = true` instead of physical deletion.
   - **Concurrency**: `RowVersion` property **MUST** be initialized to `Array.Empty<byte>()` in the entity definition to support InMemory testing and prevent nullability errors.
@@ -98,9 +151,51 @@ This document defines the coding standards, architectural patterns, and best pra
   - `400 Bad Request`: Validation failure.
 
 ## 6. Specific Business Rules
-- **Positive Values**: Financial values (Qty, Price, Total) in DB must ALWAYS be **POSITIVE**.
-  - Direction (Refund/Return) is determined by `InvoiceType`, NOT by the sign of the value.
-- **Stock Movement**: Linked to Invoices, but managed via Domain Events or Service orchestration (ensure consistency).
+
+### Positive Values
+- Financial values (Qty, Price, Total) in DB must ALWAYS be **POSITIVE**.
+- Direction (Refund/Return) is determined by `InvoiceType`, NOT by the sign of the value.
+
+### Stock Movement
+- Linked to Invoices, but managed via Domain Events or Service orchestration (ensure consistency).
+
+### Order/Invoice Line Pricing (Sipariş ve Fatura Satır Fiyatlandırması)
+
+**KOBİ Kullanım Senaryosu:**
+> "Stok kartını seçince fiyat gelsin, ama ben üzerine yazabileyim"
+
+**Uygulama:**
+1. **Frontend Sorumluluğu:** Item seçildiğinde API'den Item detayı çekilir
+2. **Fiyat Ataması:** 
+   - Satın Alma (`Purchase`) → `Item.PurchasePrice`
+   - Satış (`Sales`) → `Item.SalesPrice`
+3. **Kullanıcı Override:** Kullanıcı UnitPrice alanını manuel değiştirebilir
+4. **Backend:** Kullanıcının gönderdiği `UnitPrice` değerini kabul eder
+
+**Neden Bu Yaklaşım?**
+- Müşteriye/tedarikçiye özel fiyat verilebilir
+- Kampanya/indirim uygulanabilir
+- Toplu alımlarda farklı fiyat olabilir
+- Eski fatura/sipariş fiyatlarını korur (Item fiyatı değişse bile)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend: Item Seçimi                                  │
+│  ┌─────────────────┐                                    │
+│  │ Stok Kartı: X   │ ──► GET /api/items/5               │
+│  └─────────────────┘     Response: { salesPrice: 100 }  │
+│           │                                             │
+│           ▼                                             │
+│  ┌─────────────────┐                                    │
+│  │ UnitPrice: 100  │ ◄── Otomatik doldur                │
+│  └─────────────────┘                                    │
+│           │                                             │
+│           ▼ (Kullanıcı değiştirebilir)                  │
+│  ┌─────────────────┐                                    │
+│  │ UnitPrice: 95   │ ──► POST /api/orders               │
+│  └─────────────────┘     { unitPrice: 95 }              │
+└─────────────────────────────────────────────────────────┘
+```
 
 ## 8. Authorization Policy 🛡️
 - **Mechanism**: Dynamic Policy Authorization based on Permissions.

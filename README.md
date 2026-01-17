@@ -406,6 +406,101 @@ GET /api/stocks?warehouseId=1&itemId=5
 
 ---
 
+## 💰 Decimal & JSON Serialization
+
+### Yaklaşım: JsonConverter ile Otomatik Formatlama
+
+Tüm finansal değerler (tutar, miktar, fiyat) için **merkezi JSON converter** pattern'i kullanılmaktadır. Bu sayede:
+- Handler'larda manuel `string` dönüşümü gerekmez
+- Tutarlı format garantisi (ör: her zaman `"1250.50"`, asla `1250.5`)
+- Tek noktadan kontrol (converter değişince tüm API etkilenir)
+
+### JSON Converters
+
+| Converter | Hassasiyet | Kullanım Alanı | Input/Output |
+|-----------|------------|----------------|--------------|
+| `AmountJsonConverter` | 2 hane | Tutar, Toplam, Bakiye, Fiyat | `"1250.50"` |
+| `QuantityJsonConverter` | 3 hane | Miktar, Adet, Kilo | `"1.500"` |
+| `UnitPriceJsonConverter` | 4 hane | Birim Fiyat (maliyet) | `"10.5045"` |
+| `PercentJsonConverter` | 2 hane | İskonto, Vergi Oranı | `"18.00"` |
+
+### DTO Örneği
+
+```csharp
+public record InvoiceLineDto(
+    [property: JsonConverter(typeof(QuantityJsonConverter))]
+    decimal Qty,                    // → "1.500"
+    
+    [property: JsonConverter(typeof(UnitPriceJsonConverter))]
+    decimal UnitPrice,              // → "10.5000"
+    
+    [property: JsonConverter(typeof(AmountJsonConverter))]
+    decimal Total                   // → "15.75"
+);
+```
+
+### Özellikler
+- **Bi-directional:** Hem input (request) hem output (response) için çalışır
+- **Flexible Input:** String (`"100.50"`) veya number (`100.5`) kabul eder
+- **Consistent Output:** Her zaman string formatında döner
+- **Auto-rounding:** `MidpointRounding.AwayFromZero` ile yuvarlar
+
+### DecimalExtensions (Hesaplama için)
+
+Handler'larda hesaplama yaparken:
+```csharp
+var lineNet = DecimalExtensions.RoundAmount(qty * unitPrice);  // 2 hane
+var roundedQty = DecimalExtensions.RoundQuantity(qty);         // 3 hane
+```
+
+---
+
+## 📦 Sipariş ve Fatura Fiyatlandırması
+
+### KOBİ Kullanım Prensibi
+
+> **"Stok kartını seçince fiyat gelsin, ama ben üzerine yazabileyim"**
+
+Bu Türkiye'deki KOBİ'lerin en yaygın kullanım şeklidir.
+
+### Akış
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. Kullanıcı stok kartı seçer                          │
+│     └─► Frontend: GET /api/items/{id}                   │
+│                                                         │
+│  2. Fiyat otomatik doldurulur                           │
+│     └─► Satış Siparişi: item.SalesPrice                 │
+│     └─► Alış Siparişi: item.PurchasePrice               │
+│                                                         │
+│  3. Kullanıcı isterse fiyatı değiştirir                 │
+│     └─► Müşteriye özel fiyat, kampanya, toplu indirim   │
+│                                                         │
+│  4. Backend kullanıcının gönderdiği fiyatı kabul eder   │
+│     └─► POST/PUT request'teki UnitPrice kullanılır      │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Neden Bu Yaklaşım?
+
+| Senaryo | Açıklama |
+|---------|----------|
+| **Müşteriye özel fiyat** | VIP müşteriye %10 indirimli fiyat |
+| **Kampanya** | Yılbaşı indirimi |
+| **Toplu alım** | 100+ adet alımda birim fiyat düşer |
+| **Geçmiş kayıt** | Eski fatura/sipariş orijinal fiyatı korur |
+
+### Sorumluluk Dağılımı
+
+| Katman | Sorumluluk |
+|--------|------------|
+| **Frontend** | Item seçilince fiyatı API'den çekip UnitPrice alanına doldurur |
+| **Backend** | Request'teki UnitPrice değerini doğrudan kullanır |
+| **Validation** | UnitPrice > 0 kontrolü yapar |
+
+---
+
 ## 🌐 API Standartları
 
 ### Pagination
