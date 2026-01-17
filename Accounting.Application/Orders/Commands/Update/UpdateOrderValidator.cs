@@ -36,6 +36,18 @@ public class UpdateOrderValidator : AbstractValidator<UpdateOrderCommand>
             line.RuleFor(l => l.Description)
                 .NotEmpty()
                 .MaximumLength(200);
+
+            line.RuleFor(l => l.Quantity)
+                .GreaterThan(0)
+                .WithMessage("Miktar 0'dan büyük olmalıdır.");
+
+            line.RuleFor(l => l.UnitPrice)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("Birim fiyat 0'dan küçük olamaz.");
+
+            line.RuleFor(l => l.VatRate)
+                .Must(v => v == 0 || v == 1 || v == 10 || v == 20)
+                .WithMessage("KDV oranı 0, 1, 10 veya 20 olmalıdır.");
         });
     }
 

@@ -1,6 +1,5 @@
 ﻿using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Interfaces;
-using Accounting.Application.Common.Utils;
 using Accounting.Application.Common.Validation;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +16,15 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentCommand>
         _db = db;
         _currentUserService = currentUserService;
 
-        // RuleFor(x => x.BranchId).GreaterThan(0); // Removed
-
         RuleFor(x => x.AccountId)
             .GreaterThan(0)
             .MustAsync(AccountBelongsToBranchAsync).WithMessage("Kasa/Banka hesabı bulunamadı veya bu şubeye ait değil.");
 
         RuleFor(x => x.Direction).IsInEnum();
+
+        RuleFor(x => x.Amount)
+            .GreaterThan(0)
+            .WithMessage("Tutar 0'dan büyük olmalıdır.");
 
         // CommonValidationRules
         RuleFor(x => x.Currency).MustBeValidCurrency();

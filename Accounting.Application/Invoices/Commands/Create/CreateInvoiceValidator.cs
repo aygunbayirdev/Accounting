@@ -1,11 +1,8 @@
 ﻿using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Validation;
-using Accounting.Domain.Entities;
-using Accounting.Domain.Enums;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
 
 namespace Accounting.Application.Invoices.Commands.Create;
 
@@ -19,24 +16,20 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
         _db = db;
         _currentUserService = currentUserService;
 
-        // Temel alanlar
-        // BranchId check removed (using CurrentUser)
-
         RuleFor(x => x.ContactId)
             .GreaterThan(0);
 
-        // DateTime .NET tarafından otomatik parse edildi, sadece geçerli tarih olduğunu kontrol et
         RuleFor(x => x.DateUtc)
             .NotEmpty()
             .WithMessage("DateUtc gereklidir.");
 
-        RuleFor(x => x.Currency).MustBeValidCurrency();             // Extension
+        RuleFor(x => x.Currency).MustBeValidCurrency();
 
         RuleFor(x => x.Type)
             .IsInEnum()
             .WithMessage("Geçersiz fatura türü.");
 
-        // ✅ Branch Tutarlılık Kontrolü: Contact aynı şubeye ait olmalı
+        // Branch Tutarlılık Kontrolü: Contact aynı şubeye ait olmalı
         RuleFor(x => x)
             .MustAsync(ContactBelongsToSameBranchAsync)
             .WithMessage("Cari (Contact) fatura ile aynı şubeye ait olmalıdır.")
@@ -54,11 +47,24 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
                 .GreaterThan(0)
                 .When(l => l.ItemId.HasValue);
 
+            line.RuleFor(l => l.Qty)
+                .GreaterThan(0)
+                .WithMessage("Miktar 0'dan büyük olmalıdır.");
+
+            line.RuleFor(l => l.UnitPrice)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("Birim fiyat 0'dan küçük olamaz.");
+
             line.RuleFor(l => l.VatRate)
                 .InclusiveBetween(0, 100);
+
+            line.RuleFor(l => l.DiscountRate)
+                .InclusiveBetween(0, 100)
+                .When(l => l.DiscountRate.HasValue)
+                .WithMessage("İskonto oranı 0-100 arasında olmalıdır.");
         });
 
-        // ✅ Branch Tutarlılık Kontrolü: Satırlardaki Item'lar aynı şubeye ait olmalı
+        // Branch Tutarlılık Kontrolü: Satırlardaki Item'lar aynı şubeye ait olmalı
         RuleFor(x => x)
             .MustAsync(AllItemsBelongToSameBranchAsync)
             .WithMessage("Fatura satırlarındaki ürünler (Item) fatura ile aynı şubeye ait olmalıdır.")
@@ -77,7 +83,7 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
             .FirstOrDefaultAsync(ct);
 
         if (contact == null)
-            return false; // Contact bulunamadı - ayrı validasyonda yakalanabilir
+            return false;
 
         return contact.BranchId == currentBranchId;
     }
