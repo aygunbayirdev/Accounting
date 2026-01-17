@@ -15,7 +15,7 @@ public class ListCashBankAccountsHandler : IRequestHandler<ListCashBankAccountsQ
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public ListCashBankAccountsHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -74,6 +74,8 @@ public class ListCashBankAccountsHandler : IRequestHandler<ListCashBankAccountsQ
                                    x.Type.ToString(),
                                    x.Name,
                                    x.Iban,
+                                   x.Currency,
+                                   x.Balance,
                                    x.CreatedAtUtc,
                                    x.UpdatedAtUtc
                                ))

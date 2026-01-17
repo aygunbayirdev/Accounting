@@ -35,6 +35,8 @@ public class CreateCashBankAccountHandler(IAppDbContext db)
             fresh.Type.ToString(),
             fresh.Name,
             fresh.Iban,
+            fresh.Currency,
+            fresh.Balance,
             Convert.ToBase64String(fresh.RowVersion),
             fresh.CreatedAtUtc,
             fresh.UpdatedAtUtc
