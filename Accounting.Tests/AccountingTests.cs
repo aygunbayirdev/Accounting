@@ -125,7 +125,7 @@ namespace Accounting.Tests
             var audit = new AuditSaveChangesInterceptor(userService);
             using (var db = new AppDbContext(_options, audit, userService))
             {
-                var handler = new CreateItemHandler(db, new FakeCurrentUserService(1));
+                var handler = new CreateItemHandler(db);
 
                 var cmd = new CreateItemCommand(
                     CategoryId: null,

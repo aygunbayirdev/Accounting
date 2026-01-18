@@ -11,18 +11,15 @@ namespace Accounting.Application.Items.Commands.Delete;
 public class SoftDeleteItemHandler : IRequestHandler<SoftDeleteItemCommand, bool>
 {
     private readonly IAppDbContext _db;
-    private readonly ICurrentUserService _currentUserService;
 
-    public SoftDeleteItemHandler(IAppDbContext db, ICurrentUserService currentUserService)
+    public SoftDeleteItemHandler(IAppDbContext db)
     {
         _db = db;
-        _currentUserService = currentUserService;
     }
 
     public async Task<bool> Handle(SoftDeleteItemCommand r, CancellationToken ct)
     {
         var e = await _db.Items
-            .ApplyBranchFilter(_currentUserService)
             .FirstOrDefaultAsync(i => i.Id == r.Id && !i.IsDeleted, ct);
         if (e is null) throw new NotFoundException("Item", r.Id);
 

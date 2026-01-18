@@ -36,7 +36,7 @@ public class TransferStockHandler(IAppDbContext db) : IRequestHandler<TransferSt
         var branchId = sourceWh.BranchId;
 
         // 4. Validate Item
-        var item = await db.Items.FirstOrDefaultAsync(i => i.Id == r.ItemId && i.BranchId == branchId, ct)
+        var item = await db.Items.FirstOrDefaultAsync(i => i.Id == r.ItemId, ct)
             ?? throw new NotFoundException("Item", r.ItemId);
 
         // 5. Source Stock Check (Snapshot)

@@ -50,7 +50,7 @@ public class InvoicesTests
         // Seed
         db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
         db.Contacts.Add(new Contact { Id = 1, BranchId = 1, Name = "Test Customer", Code = "C-01", IsCustomer = true });
-        db.Items.Add(new Item { Id = 10, BranchId = 1, Name = "Item A", Code = "I-01", Unit = "adet", VatRate = 20, SalesPrice = 100m });
+        db.Items.Add(new Item { Id = 10, Name = "Item A", Code = "I-01", Unit = "adet", VatRate = 20, SalesPrice = 100m });
         db.Warehouses.Add(new Warehouse { Id = 1, BranchId = 1, Name = "Main Warehouse", Code = "WH-01", IsDefault = true, RowVersion = Array.Empty<byte>() });
         await db.SaveChangesAsync();
 
@@ -102,7 +102,7 @@ public class InvoicesTests
         // Seed
         db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
         db.Contacts.Add(new Contact { Id = 1, BranchId = 1, Name = "Test Customer", Code = "C-01", IsCustomer = true });
-        db.Items.Add(new Item { Id = 10, BranchId = 1, Name = "Item A", Code = "I-01", Unit = "adet", VatRate = 20, SalesPrice = 100m });
+        db.Items.Add(new Item { Id = 10, Name = "Item A", Code = "I-01", Unit = "adet", VatRate = 20, SalesPrice = 100m });
         db.Warehouses.Add(new Warehouse { Id = 1, BranchId = 1, Name = "Main Warehouse", Code = "WH-01", IsDefault = true, RowVersion = Array.Empty<byte>() });
         
         var invoice = new Invoice

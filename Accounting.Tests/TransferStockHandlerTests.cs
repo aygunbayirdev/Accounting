@@ -34,7 +34,7 @@ public class TransferStockHandlerTests
         var branch = new Branch { Id = 1, Name = "Main Branch", Code = "MAIN", RowVersion = rowVer };
         var w1 = new Warehouse { Id = 1, BranchId = 1, Name = "Source", Code = "W1", RowVersion = rowVer };
         var w2 = new Warehouse { Id = 2, BranchId = 1, Name = "Target", Code = "W2", RowVersion = rowVer };
-        var item = new Item { Id = 10, BranchId = 1, Name = "Item X", Code = "ITM01", RowVersion = rowVer };
+        var item = new Item { Id = 10, Name = "Item X", Code = "ITM01", RowVersion = rowVer };
         
         // 100 Adet Stok
         var stock1 = new Stock { BranchId = 1, WarehouseId = 1, ItemId = 10, Quantity = 100m, RowVersion = rowVer };
@@ -85,7 +85,7 @@ public class TransferStockHandlerTests
         var branch = new Branch { Id = 1, Name = "Main Branch", Code = "MAIN", RowVersion = rowVer };
         var w1 = new Warehouse { Id = 1, BranchId = 1, Name = "Source", Code = "W1", RowVersion = rowVer };
         var w2 = new Warehouse { Id = 2, BranchId = 1, Name = "Target", Code = "W2", RowVersion = rowVer };
-        var item = new Item { Id = 10, BranchId = 1, Name = "Item X", Code = "ITM01", RowVersion = rowVer };
+        var item = new Item { Id = 10, Name = "Item X", Code = "ITM01", RowVersion = rowVer };
         
         // 5 Adet Stok
         var stock1 = new Stock { BranchId = 1, WarehouseId = 1, ItemId = 10, Quantity = 5m, RowVersion = rowVer };

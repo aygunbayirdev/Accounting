@@ -341,7 +341,6 @@ public static class DataSeeder
     // Elektronik Ürünler (Inventory - Stoklu)
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         CategoryId = categoryIds[0],
         Code = "LAPTOP01",
         Name = "Dizüstü Bilgisayar",
@@ -355,7 +354,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         CategoryId = categoryIds[0],
         Code = "MOUSE01",
         Name = "Kablosuz Mouse",
@@ -369,7 +367,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         CategoryId = categoryIds[0],
         Code = "TABLET01",
         Name = "Tablet 10 inç",
@@ -385,7 +382,6 @@ public static class DataSeeder
     // Gıda Ürünleri (Inventory - Stoklu)
     new()
     {
-        BranchId = branchIds[1 % branchIds.Count],
         CategoryId = categoryIds[1],
         Code = "KAHVE01",
         Name = "Filtre Kahve 1kg",
@@ -399,7 +395,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[1 % branchIds.Count],
         CategoryId = categoryIds[1],
         Code = "CAY01",
         Name = "Siyah Çay 500g",
@@ -415,7 +410,6 @@ public static class DataSeeder
     // Kırtasiye Ürünleri (Inventory - Stoklu)
     new()
     {
-        BranchId = branchIds[2 % branchIds.Count],
         CategoryId = categoryIds[2],
         Code = "KALEM01",
         Name = "Tükenmez Kalem (12'li)",
@@ -429,7 +423,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[2 % branchIds.Count],
         CategoryId = categoryIds[2],
         Code = "DEFTER01",
         Name = "Spiralli Defter A4",
@@ -445,7 +438,6 @@ public static class DataSeeder
     // Temizlik Ürünleri (Inventory - Stoklu)
     new()
     {
-        BranchId = branchIds[2 % branchIds.Count],
         CategoryId = categoryIds[3],
         Code = "DETERJAN01",
         Name = "Çamaşır Deterjanı 5L",
@@ -459,7 +451,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         CategoryId = categoryIds[3],
         Code = "SABUN01",
         Name = "Sıvı Sabun 5L",
@@ -475,7 +466,6 @@ public static class DataSeeder
     // Hizmetler (Service - Stok Takibi Yok)
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         CategoryId = categoryIds[4],
         Code = "SERVIS01",
         Name = "Teknik Destek Hizmeti",
@@ -491,7 +481,6 @@ public static class DataSeeder
     // 🆕 EXPENSE TYPE ITEMS (Masraflar)
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "EXP001",
         Name = "Elektrik Gideri",
         Type = ItemType.Expense,
@@ -504,7 +493,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "EXP002",
         Name = "Su Gideri",
         Type = ItemType.Expense,
@@ -517,7 +505,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "EXP003",
         Name = "Kira Gideri",
         Type = ItemType.Expense,
@@ -530,7 +517,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "EXP004",
         Name = "İnternet Gideri",
         Type = ItemType.Expense,
@@ -543,7 +529,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "EXP005",
         Name = "Taksi/Ulaşım Gideri",
         Type = ItemType.Expense,
@@ -558,7 +543,6 @@ public static class DataSeeder
     // 🆕 FIXED ASSET TYPE ITEMS (Demirbaşlar)
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "FA001",
         Name = "Dizüstü Bilgisayar (Demirbaş)",
         Type = ItemType.FixedAsset,
@@ -572,7 +556,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "FA002",
         Name = "Ofis Masası",
         Type = ItemType.FixedAsset,
@@ -586,7 +569,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "FA003",
         Name = "Ofis Sandalyesi",
         Type = ItemType.FixedAsset,
@@ -600,7 +582,6 @@ public static class DataSeeder
     },
     new()
     {
-        BranchId = branchIds[0 % branchIds.Count],
         Code = "FA004",
         Name = "Yazıcı/Tarayıcı",
         Type = ItemType.FixedAsset,
@@ -656,14 +637,11 @@ public static class DataSeeder
         var movements = new List<StockMovement>();
         var stocks = new List<Stock>();
 
-        var itemsByBranch = itemsAll.GroupBy(i => i.BranchId).ToDictionary(g => g.Key, g => g.ToList());
-
         foreach (var branchId in effectiveBranchIds)
         {
             if (!defaultWarehouseByBranch.TryGetValue(branchId, out var warehouse)) continue;
-            if (!itemsByBranch.TryGetValue(branchId, out var branchItems)) continue;
 
-            foreach (var item in branchItems)
+            foreach (var item in itemsAll)
             {
                 var initialQty = R3(50m + (item.Id * 7) % 100);
 
@@ -718,7 +696,7 @@ public static class DataSeeder
         {
             var branchId = effectiveBranchIds[(i - 1) % effectiveBranchIds.Count];
             var customerId = customerIds[(i - 1) % customerIds.Count];
-            var item = itemsAll.FirstOrDefault(x => x.BranchId == branchId) ?? itemsAll.First();
+            var item = itemsAll.First();
 
             var qty = R3(1m + (i % 5));
             var unitPrice = item.SalesPrice ?? R2(100m);
@@ -770,7 +748,7 @@ public static class DataSeeder
         {
             var branchId = effectiveBranchIds[(i - 1) % effectiveBranchIds.Count];
             var vendorId = vendorIds[(i - 1) % vendorIds.Count];
-            var item = itemsAll.FirstOrDefault(x => x.BranchId == branchId) ?? itemsAll.First();
+            var item = itemsAll.First();
 
             var qty = R3(5m + (i * 3));
             var unitPrice = item.PurchasePrice ?? R2(80m);
@@ -842,7 +820,7 @@ public static class DataSeeder
                 ? customerIds[(i - 1) % customerIds.Count]
                 : vendorIds[(i - 1) % vendorIds.Count];
 
-            var item = itemsAll.FirstOrDefault(x => x.BranchId == branchId) ?? itemsAll.First();
+            var item = itemsAll.First();
 
             var qty = R3(1m + (i % 7) * 2);
             var unitPrice = isSales

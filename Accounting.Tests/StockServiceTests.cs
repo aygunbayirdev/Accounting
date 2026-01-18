@@ -33,7 +33,7 @@ public class StockServiceTests
         // Seed
         db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
         db.Contacts.Add(new Contact { Id = 1, BranchId = 1, Name = "Contact", Code = "C-01" });
-        db.Items.Add(new Item { Id = 10, BranchId = 1, Name = "Item A", Code = "I-01" });
+        db.Items.Add(new Item { Id = 10, Name = "Item A", Code = "I-01" });
         
         // Purchase Invoice (In)
         var inv1 = new Invoice
@@ -87,7 +87,7 @@ public class StockServiceTests
 
         // Seed only 5 items in stock
         db.Branches.Add(new Branch { Id = 1, Name = "Main Branch", Code = "BR-01" });
-        db.Items.Add(new Item { Id = 10, BranchId = 1, Name = "Item A", Code = "I-01" });
+        db.Items.Add(new Item { Id = 10, Name = "Item A", Code = "I-01" });
         var inv = new Invoice { BranchId = 1, ContactId = 1, Type = InvoiceType.Purchase, InvoiceNumber="INV-01", RowVersion = Array.Empty<byte>() };
         inv.Lines.Add(new InvoiceLine { ItemId = 10, ItemCode = "I-01", ItemName = "Item A", Unit="adet", Qty = 5, Net=50, Gross=60 });
         db.Invoices.Add(inv);

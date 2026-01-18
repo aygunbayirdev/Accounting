@@ -3,23 +3,24 @@ using Accounting.Domain.Enums;
 
 namespace Accounting.Domain.Entities;
 
-public class Item : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranch
+// IHasBranch KALDIRILDI - Artık global
+public class Item : IHasTimestamps, ISoftDeletable, IHasRowVersion
 {
     public int Id { get; set; }
-    public int BranchId { get; set; }
-    public int? CategoryId { get; set; } // Optional category
+    // BranchId KALDIRILDI - Global entity
+    public int? CategoryId { get; set; }
     public string Name { get; set; } = null!;
     public string Code { get; set; } = null!;
     public ItemType Type { get; set; } = ItemType.Inventory;
     public string Unit { get; set; } = "adet";
     public int VatRate { get; set; } = 20;
-    public int? DefaultWithholdingRate { get; set; } // Varsayılan Tevkifat Oranı (%) - Nullable
-    public decimal? PurchasePrice { get; set; } // Alış Fiyatı (Maliyet)
-    public decimal? SalesPrice { get; set; }    // Satış Fiyatı (Liste Fiyatı)
+    public int? DefaultWithholdingRate { get; set; }
+    public decimal? PurchasePrice { get; set; }
+    public decimal? SalesPrice { get; set; }
 
-    public string? PurchaseAccountCode { get; set; }  // Muhasebe kodu (Alış)
-    public string? SalesAccountCode { get; set; }     // Muhasebe kodu (Satış)
-    public int? UsefulLifeYears { get; set; }         // Demirbaş faydalı ömür
+    public string? PurchaseAccountCode { get; set; }
+    public string? SalesAccountCode { get; set; }
+    public int? UsefulLifeYears { get; set; }
 
     // audit + soft delete + concurrency
     public DateTime CreatedAtUtc { get; set; }
@@ -29,6 +30,6 @@ public class Item : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranch
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigations
-    public Branch Branch { get; set; } = null!;
+    // Branch navigation KALDIRILDI
     public Category? Category { get; set; }
 }

@@ -13,17 +13,15 @@ public class GetItemByIdHandler : IRequestHandler<GetItemByIdQuery, ItemDetailDt
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
 
-    public GetItemByIdHandler(IAppDbContext db, ICurrentUserService currentUserService)
+    public GetItemByIdHandler(IAppDbContext db)
     {
         _db = db;
-        _currentUserService = currentUserService;
     }
 
     public async Task<ItemDetailDto> Handle(GetItemByIdQuery r, CancellationToken ct)
     {
         var item = await _db.Items
             .AsNoTracking()
-            .ApplyBranchFilter(_currentUserService)
             .Include(x => x.Category)
             .Where(x => x.Id == r.Id && !x.IsDeleted)
             .Select(x => new ItemDetailDto(

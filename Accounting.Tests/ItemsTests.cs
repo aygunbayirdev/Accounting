@@ -49,7 +49,7 @@ public class ItemsTests
         db.Branches.Add(new Branch { Id = 1, Name = "Ana Şube", Code = "BR-01" });
         await db.SaveChangesAsync();
 
-        var handler = new CreateItemHandler(db, userService);
+        var handler = new CreateItemHandler(db);
 
         // Command imzası: CategoryId, Code, Name, Type, Unit, VatRate, DefaultWithholdingRate, PurchasePrice, SalesPrice
         var command = new CreateItemCommand(
@@ -79,7 +79,6 @@ public class ItemsTests
         Assert.Equal("IT-001", item.Code);
         Assert.Equal(5000m, item.PurchasePrice);
         Assert.Equal(7000m, item.SalesPrice);
-        Assert.Equal(1, item.BranchId); // CurrentUser'dan geldi
     }
 
     #endregion
@@ -98,7 +97,6 @@ public class ItemsTests
 
         var item = new Item
         {
-            BranchId = 1,
             Name = "Old Name",
             Code = "IT-002",
             Type = ItemType.Inventory,
@@ -110,7 +108,7 @@ public class ItemsTests
         db.Items.Add(item);
         await db.SaveChangesAsync();
 
-        var handler = new UpdateItemHandler(db, userService);
+        var handler = new UpdateItemHandler(db);
 
         // UpdateItemCommand imzası: Id, CategoryId, Code, Name, Type, Unit, VatRate, DefaultWithholdingRate, PurchasePrice, SalesPrice, RowVersion
         var command = new UpdateItemCommand(
@@ -156,7 +154,6 @@ public class ItemsTests
 
         var item = new Item
         {
-            BranchId = 1,
             Name = "To Delete",
             Code = "DEL-001",
             Type = ItemType.Inventory,
@@ -167,7 +164,7 @@ public class ItemsTests
         db.Items.Add(item);
         await db.SaveChangesAsync();
 
-        var handler = new SoftDeleteItemHandler(db, userService);
+        var handler = new SoftDeleteItemHandler(db);
         var command = new SoftDeleteItemCommand(item.Id, Convert.ToBase64String(item.RowVersion));
 
         // ACT
@@ -199,7 +196,6 @@ public class ItemsTests
 
         var item = new Item
         {
-            BranchId = 1,
             Name = "Test Item",
             Code = "TST-001",
             Type = ItemType.Inventory,
@@ -211,7 +207,7 @@ public class ItemsTests
         db.Items.Add(item);
         await db.SaveChangesAsync();
 
-        var handler = new GetItemByIdHandler(db, userService);
+        var handler = new GetItemByIdHandler(db);
 
         // ACT
         var result = await handler.Handle(new GetItemByIdQuery(item.Id), CancellationToken.None);
@@ -236,7 +232,6 @@ public class ItemsTests
         {
             db.Items.Add(new Item
             {
-                BranchId = 1,
                 Name = $"Item {i}",
                 Code = $"IT-{i:000}",
                 Type = ItemType.Inventory,
@@ -283,7 +278,6 @@ public class ItemsTests
         // Önce bir item oluştur
         db.Items.Add(new Item
         {
-            BranchId = 1,
             Name = "First Item",
             Code = "DUPLICATE",
             Type = ItemType.Inventory,
@@ -293,7 +287,7 @@ public class ItemsTests
         });
         await db.SaveChangesAsync();
 
-        var handler = new CreateItemHandler(db, userService);
+        var handler = new CreateItemHandler(db);
         var command = new CreateItemCommand(
             CategoryId: null,
             Code: "DUPLICATE", // Aynı kod

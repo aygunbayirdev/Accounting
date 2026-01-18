@@ -91,7 +91,7 @@ public sealed class UpdateInvoiceValidator : AbstractValidator<UpdateInvoiceComm
 
         var mismatchedItems = await _db.Items
             .AsNoTracking()
-            .Where(i => itemIds.Contains(i.Id) && !i.IsDeleted && i.BranchId != currentBranchId)
+            .Where(i => itemIds.Contains(i.Id) && !i.IsDeleted)
             .AnyAsync(ct);
 
         return !mismatchedItems;

@@ -29,7 +29,7 @@ public class CreateStockMovementHandler(IAppDbContext db, ICurrentUserService cu
 
         // Item kontrolü (şube uyumu)
         var item = await db.Items.FirstOrDefaultAsync(x =>
-            x.Id == r.ItemId && x.BranchId == branchId, ct);
+            x.Id == r.ItemId, ct);
 
         if (item is null) throw new NotFoundException("Item", r.ItemId);
 

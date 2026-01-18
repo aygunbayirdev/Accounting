@@ -83,6 +83,19 @@ Tüm sorgular otomatik olarak şubeye göre filtrelenir.
 - **Merkez** kullanıcılar → TÜM şubeleri görebilir  
 - **Normal** kullanıcılar → SADECE kendi şubelerini görebilir
 
+### Şube Bazlı Entity'ler (Branch Filter Uygulanır):
+**List:** Invoices, Contacts, Payments, CashBankAccounts, Stocks, Warehouses, StockMovements
+
+**GetById:** Invoices, Contacts, Payments, CashBankAccounts, Warehouses
+
+### Global Entity'ler (Branch Filter Uygulanmaz):
+**Items:** 🌍 Tüm şubeler tüm item'ları görebilir
+- Item (Ürün Tanımı): Global
+- Stock (Stok Miktarı): Şube bazlı ✅
+- StockMovement (Stok Hareketi): Şube bazlı ✅
+
+**Mantık:** Ürün kataloğu merkezde, stok takibi şubelerde.
+
 ### Uygulama
 
 ```csharp
@@ -163,6 +176,16 @@ POST /api/invoices {
 ### 3. **Items (Stok Kartları)** ✨ GÜNCELLENDİ
 
 **Unified Item Model**: Tüm ürün, hizmet, masraf ve demirbaşlar tek bir Item entity'sinde yönetilir.
+
+**🌍 Global Item Model**: Tüm ürün, hizmet, masraf ve demirbaşlar **tüm şubeler tarafından paylaşılan** tek bir Item entity'sinde yönetilir.
+
+#### 🔑 Önemli: Global vs Şube Bazlı
+
+| Entity | Kapsam | Açıklama |
+|--------|--------|----------|
+| **Item** | 🌍 GLOBAL | Ürün tanımı tüm şubeler için tek ve ortaktır |
+| **Stock** | 🏢 ŞUBE BAZLI | Her şube kendi stok miktarını takip eder |
+| **StockMovement** | 🏢 ŞUBE BAZLI | Her şube kendi hareketlerini yönetir |
 
 #### Item Tipleri (`ItemType` Enum):
 

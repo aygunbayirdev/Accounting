@@ -24,7 +24,6 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
     {
         var q = _db.Items
             .AsNoTracking()
-            .ApplyBranchFilter(_currentUserService)
             .Include(x => x.Category)
             .Where(x => !x.IsDeleted);
 

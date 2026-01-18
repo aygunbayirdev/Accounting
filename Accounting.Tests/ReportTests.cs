@@ -82,7 +82,7 @@ public class ReportTests
 
         // Stock
         _db.Warehouses.Add(new Warehouse { Id = 1, BranchId = 1, Name = "Main WH", Code = "WH1" });
-        _db.Items.Add(new Item { Id = 1, BranchId = 1, Name = "Item A", Code = "ITM1", Unit = "PCS" });
+        _db.Items.Add(new Item { Id = 1, Name = "Item A", Code = "ITM1", Unit = "PCS" });
         _db.Stocks.Add(new Stock 
         { 
             BranchId = 1, WarehouseId = 1, ItemId = 1, 

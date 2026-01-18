@@ -42,7 +42,7 @@ public class StockMovementTests
         _db.Branches.Add(new Branch { Id = 1, Name = "Main", Code = "B1" });
         _db.Warehouses.Add(new Warehouse { Id = 1, BranchId = 1, Name = "Main Warehouse", Code = "WH1" });
         _db.Warehouses.Add(new Warehouse { Id = 2, BranchId = 1, Name = "Secondary Warehouse", Code = "WH2" });
-        _db.Items.Add(new Item { Id = 1, Name = "Item A", Code = "ITM001", Unit = "PCS", BranchId = 1 });
+        _db.Items.Add(new Item { Id = 1, Name = "Item A", Code = "ITM001", Unit = "PCS" });
         _db.SaveChanges();
     }
 

@@ -47,7 +47,7 @@ public class OrderTests
     {
         _db.Branches.Add(new Branch { Id = 1, Name = "Main", Code = "B1" });
         _db.Contacts.Add(new Contact { Id = 1, BranchId = 1, Name = "Customer A", Code = "C001", IsCustomer = true, RowVersion = Array.Empty<byte>() });
-        _db.Items.Add(new Item { Id = 1, BranchId = 1, Name = "Item A", Code = "ITM1", Unit = "PCS" });
+        _db.Items.Add(new Item { Id = 1, Name = "Item A", Code = "ITM1", Unit = "PCS" });
         
         // Seed an existing order for Update/Delete tests
         _db.Orders.Add(new Order

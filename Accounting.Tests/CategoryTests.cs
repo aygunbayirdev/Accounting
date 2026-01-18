@@ -106,7 +106,6 @@ public class CategoryTests
         var category = new Category { Id = 10, Name = "Used Cat", RowVersion = rowVer };
         var item = new Item
         {
-            BranchId = 1,
             CategoryId = 10,
             Name = "Item X",
             Code = "X",

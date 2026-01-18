@@ -13,18 +13,15 @@ namespace Accounting.Application.Items.Commands.Update;
 public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDto>
 {
     private readonly IAppDbContext _db;
-    private readonly ICurrentUserService _currentUserService;
 
-    public UpdateItemHandler(IAppDbContext db, ICurrentUserService currentUserService)
+    public UpdateItemHandler(IAppDbContext db)
     {
         _db = db;
-        _currentUserService = currentUserService;
     }
 
     public async Task<ItemDetailDto> Handle(UpdateItemCommand r, CancellationToken ct)
     {
         var item = await _db.Items
-            .ApplyBranchFilter(_currentUserService)
             .Include(x => x.Category)
             .Where(x => x.Id == r.Id && !x.IsDeleted)
             .FirstOrDefaultAsync(ct);
