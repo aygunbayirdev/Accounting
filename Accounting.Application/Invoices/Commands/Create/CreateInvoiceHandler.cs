@@ -1,4 +1,5 @@
-﻿using Accounting.Application.Common.Abstractions;
+﻿using Accounting.Application.Common.Helpers;
+using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Exceptions;
 using Accounting.Application.Common.Utils;
 using Accounting.Domain.Entities;
@@ -118,12 +119,16 @@ public class CreateInvoiceHandler
 
             var item = itemsMap[itemId];
 
+            // Muhasebe kodunu otomatik belirle (TDHP)
+            var accountCode = AccountCodeHelper.GetAccountCode(invType, (ItemType)item.Type);
+
             var line = new InvoiceLine
             {
                 ItemId = itemId,
                 ItemCode = item.Code,
                 ItemName = item.Name,
                 Unit = item.Unit,
+                AccountCode = accountCode,  // TDHP kodu
                 Qty = lineDto.Qty,
                 UnitPrice = lineDto.UnitPrice,
                 VatRate = lineDto.VatRate,

@@ -9,6 +9,7 @@ public record InvoiceLineDto(
     string ItemCode,
     string ItemName,
     string Unit,
+    string? AccountCode, // Muhasebe kodu (TDHP)
 
     [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Qty,

@@ -41,6 +41,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
                 l.ItemCode,   // snapshot
                 l.ItemName,   // snapshot
                 l.Unit,       // snapshot
+                l.AccountCode,
                 l.Qty,
                 l.UnitPrice,
                 l.VatRate,

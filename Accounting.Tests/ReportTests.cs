@@ -3,6 +3,7 @@ using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Reports.Queries;
 using Accounting.Application.Reports.Queries.GetContactStatement;
 using Accounting.Application.Reports.Queries.GetDashboardStats;
+using Accounting.Application.Reports.Queries.GetIncomeExpense;
 using Accounting.Application.Reports.Queries.GetProfitLoss;
 using Accounting.Application.Reports.Queries.GetStockStatus;
 using Accounting.Application.Services; // For IContactBalanceService
@@ -151,15 +152,15 @@ public class ReportTests
     }
     
     [Fact] 
-    public async Task GetProfitLoss_ShouldReturnNetFigures()
+    public async Task GetIncomeExpense_ShouldReturnNetFigures()
     {
-        var handler = new GetProfitLossHandler(_db); // Correct Class Name
-        var query = new GetProfitLossQuery(1, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow); // Added BranchId Arg
+        var handler = new GetIncomeExpenseHandler(_db); // Correct Class Name
+        var query = new GetIncomeExpenseQuery(1, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow); // Added BranchId Arg
 
         var result = await handler.Handle(query, CancellationToken.None);
         
         Assert.Equal(1000, result.Income); 
-        Assert.Equal(0, result.Expenses); 
+        Assert.Equal(0, result.OperatingExpenses); 
         Assert.Equal(1000, result.NetProfit);
     }
 }

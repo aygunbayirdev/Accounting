@@ -24,6 +24,9 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
         b.Property(x => x.ItemName).IsRequired().HasMaxLength(256);
         b.Property(x => x.Unit).IsRequired().HasMaxLength(16);
 
+        // Muhasebe Kodu (Snapshot)
+        b.Property(x => x.AccountCode).HasMaxLength(16);
+
         // Timestamps
         b.Property(x => x.CreatedAtUtc)
             .HasDefaultValueSql("GETUTCDATE()")
