@@ -9,7 +9,7 @@ public record CreateItemCommand(
     int? CategoryId,
     string Code,
     string Name,
-    int Type, // ItemType: 1=Inventory, 2=Service
+    int Type,
     string Unit,
     int VatRate,
     int? DefaultWithholdingRate, // Varsayılan tevkifat oranı (%)
@@ -18,5 +18,9 @@ public record CreateItemCommand(
     decimal? PurchasePrice,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
-    decimal? SalesPrice
+    decimal? SalesPrice,
+
+    string? PurchaseAccountCode,
+    string? SalesAccountCode,
+    int? UsefulLifeYears
 ) : IRequest<ItemDetailDto>;

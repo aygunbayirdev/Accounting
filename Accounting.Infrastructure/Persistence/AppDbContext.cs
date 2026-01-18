@@ -15,7 +15,7 @@ public class AppDbContext : DbContext, IAppDbContext
     private readonly ICurrentUserService _currentUserService;
 
     public AppDbContext(
-        DbContextOptions<AppDbContext> options, 
+        DbContextOptions<AppDbContext> options,
         AuditSaveChangesInterceptor audit,
         ICurrentUserService currentUserService) : base(options)
     {
@@ -34,10 +34,6 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderLine> OrderLines => Set<OrderLine>();
-    public DbSet<ExpenseList> ExpenseLists => Set<ExpenseList>();
-    public DbSet<ExpenseLine> ExpenseLines => Set<ExpenseLine>();
-    public DbSet<ExpenseDefinition> ExpenseDefinitions { get; set; } = null!;
-    public DbSet<FixedAsset> FixedAssets { get; set; } = null!;
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<Stock> Stocks => Set<Stock>();
@@ -56,7 +52,7 @@ public class AppDbContext : DbContext, IAppDbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-        
+
         // NOTE: Multi-Branch Visibility Filtering
         // We do NOT use Global Query Filters for branch-based security because:
         // 1. EF Core caches compiled queries with Expression.Constant, which captures service state at model-build time
@@ -69,7 +65,7 @@ public class AppDbContext : DbContext, IAppDbContext
         //       .Where(i => currentUserService.IsAdmin || currentUserService.IsHeadquarters || i.BranchId == currentUserService.BranchId)
         //       .ToListAsync();
     }
-    
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);

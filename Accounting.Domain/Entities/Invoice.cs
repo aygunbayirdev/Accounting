@@ -10,6 +10,8 @@ public class Invoice : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranc
     public int ContactId { get; set; }
     public int? OrderId { get; set; } // Link to Order
     public InvoiceType Type { get; set; } = InvoiceType.Sales;
+    public DocumentType DocumentType { get; set; } = DocumentType.Invoice;
+
     public DateTime DateUtc { get; set; } = DateTime.UtcNow;
     public string InvoiceNumber { get; set; } = null!;
     public string Currency { get; set; } = "TRY";
@@ -29,9 +31,9 @@ public class Invoice : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranc
     public decimal TotalVat { get; set; }       // Toplam KDV
     public decimal TotalWithholding { get; set; } // Toplam Tevkifat
     public decimal TotalGross { get; set; }     // Genel Toplam (Vergiler Dahil, Tevkifat Düşülmemiş)
-    // NOT: Fatura Dip Toplamı = TotalGross
-    // Cari Alacağına işlenen = TotalGross - TotalWithholding
-    
+                                                // NOT: Fatura Dip Toplamı = TotalGross
+                                                // Cari Alacağına işlenen = TotalGross - TotalWithholding
+
     public decimal Balance { get; set; }        // Kalan Bakiye
 
     public List<InvoiceLine> Lines { get; set; } = new();

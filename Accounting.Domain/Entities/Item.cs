@@ -17,6 +17,10 @@ public class Item : IHasTimestamps, ISoftDeletable, IHasRowVersion, IHasBranch
     public decimal? PurchasePrice { get; set; } // Alış Fiyatı (Maliyet)
     public decimal? SalesPrice { get; set; }    // Satış Fiyatı (Liste Fiyatı)
 
+    public string? PurchaseAccountCode { get; set; }  // Muhasebe kodu (Alış)
+    public string? SalesAccountCode { get; set; }     // Muhasebe kodu (Satış)
+    public int? UsefulLifeYears { get; set; }         // Demirbaş faydalı ömür
+
     // audit + soft delete + concurrency
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }

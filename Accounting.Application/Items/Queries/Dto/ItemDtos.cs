@@ -9,17 +9,20 @@ public record ItemListItemDto(
     string? CategoryName,
     string Code,
     string Name,
-    int Type,                       // ItemType enum (1=Inventory, 2=Service)
+    int Type, // ItemType enum (1=Inventory, 2=Service, 3=Expense, 4=FixedAsset)
     string Unit,
     int VatRate,
-
-    int DefaultWithholdingRate,     // Varsayılan tevkifat oranı
+    int DefaultWithholdingRate,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? PurchasePrice,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? SalesPrice,
+
+    string? PurchaseAccountCode,
+    string? SalesAccountCode,
+    int? UsefulLifeYears,
 
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
@@ -34,7 +37,6 @@ public record ItemDetailDto(
     int Type,
     string Unit,
     int VatRate,
-
     int DefaultWithholdingRate,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
@@ -42,6 +44,10 @@ public record ItemDetailDto(
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? SalesPrice,
+
+    string? PurchaseAccountCode,
+    string? SalesAccountCode,
+    int? UsefulLifeYears,
 
     string RowVersion, // base64
     DateTime CreatedAtUtc,

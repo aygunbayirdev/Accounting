@@ -17,7 +17,6 @@ public class InvoiceNumberService(IAppDbContext db) : IInvoiceNumberService
         { InvoiceType.Purchase, "ALI" },
         { InvoiceType.SalesReturn, "SIA" },
         { InvoiceType.PurchaseReturn, "AIA" },
-        { InvoiceType.Expense, "MAS" }
     };
 
     public async Task<string> GenerateNextAsync(int branchId, string invoiceTypePrefix, CancellationToken ct = default)

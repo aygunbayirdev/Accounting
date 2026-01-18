@@ -51,10 +51,5 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
             .WithMany()
             .HasForeignKey(x => x.ItemId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        b.HasOne(x => x.ExpenseDefinition)
-            .WithMany()
-            .HasForeignKey(x => x.ExpenseDefinitionId)
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }

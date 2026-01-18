@@ -46,7 +46,7 @@ public class BranchTests
 
             Assert.Equal("TEST-CRE", result.Code);
             Assert.Equal("Test Branch", result.Name);
-            Assert.NotNull(result.RowVersionBase64);
+            Assert.NotNull(result.RowVersion);
 
             var inDb = await db.Branches.FindAsync(result.Id);
             Assert.NotNull(inDb);

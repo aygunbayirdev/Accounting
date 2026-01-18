@@ -105,7 +105,7 @@ namespace Accounting.Tests
 
                 var absMock = new Mock<IAccountBalanceService>();
                 var handler = new UpdateChequeStatusHandler(db, absMock.Object);
-                var cmd = new UpdateChequeStatusCommand(cheque.Id, ChequeStatus.Paid, CashBankAccountId: 10);
+                var cmd = new UpdateChequeStatusCommand(cheque.Id, ChequeStatus.Paid, Convert.ToBase64String(cheque.RowVersion), CashBankAccountId: 10);
 
                 await handler.Handle(cmd, CancellationToken.None);
 
@@ -135,8 +135,11 @@ namespace Accounting.Tests
                     Unit: "Pcs",
                     VatRate: 18,
                     DefaultWithholdingRate: null,
-                    PurchasePrice: "85.50",
-                    SalesPrice: "120.00"
+                    PurchasePrice: 85.50m,
+                    SalesPrice: 120.00m,
+                    null,
+                    null,
+                    null
                 );
 
                 var result = await handler.Handle(cmd, CancellationToken.None);

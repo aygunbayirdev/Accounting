@@ -55,7 +55,7 @@ public class StockMovementTests
             WarehouseId: 1,
             ItemId: 1,
             Type: StockMovementType.AdjustmentIn, // Changed from Entry
-            Quantity: "10.5",
+            Quantity: 10.5m,
             TransactionDateUtc: DateTime.UtcNow,
             Note: "Initial Stock",
             InvoiceId: null
@@ -76,7 +76,7 @@ public class StockMovementTests
     public async Task CreateStockMovement_ShouldFail_WhenWarehouseNotFound()
     {
         var handler = new CreateStockMovementHandler(_db, _currentUserServiceMock.Object);
-        var command = new CreateStockMovementCommand(99, 1, StockMovementType.AdjustmentIn, "10", DateTime.UtcNow, null);
+        var command = new CreateStockMovementCommand(99, 1, StockMovementType.AdjustmentIn, 10.00m, DateTime.UtcNow, null);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(command, CancellationToken.None));
     }
@@ -112,7 +112,7 @@ public class StockMovementTests
             SourceWarehouseId: 1,
             TargetWarehouseId: 2,
             ItemId: 1,
-            Quantity: "50",
+            Quantity: 50.00m,
             TransactionDateUtc: DateTime.UtcNow,
             Description: "Transfer half"
         );
@@ -144,7 +144,7 @@ public class StockMovementTests
     {
         // No initial stock
         var handler = new TransferStockHandler(_db); // Removed mock arg
-        var command = new TransferStockCommand(1, 2, 1, "50", DateTime.UtcNow, "Transfer");
+        var command = new TransferStockCommand(1, 2, 1, 50.00m, DateTime.UtcNow, "Transfer");
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));

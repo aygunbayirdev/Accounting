@@ -60,8 +60,11 @@ public class ItemsTests
             Unit: "adet",
             VatRate: 20,
             DefaultWithholdingRate: null,
-            PurchasePrice: "5000.00",
-            SalesPrice: "7000.00"
+            PurchasePrice: 5000.00m,
+            SalesPrice: 7000.00m,
+            null,
+            null,
+            null
         );
 
         // ACT - İşlem (Test edilecek kodu çalıştır)
@@ -119,8 +122,11 @@ public class ItemsTests
             Unit: "kutu",
             VatRate: 18,
             DefaultWithholdingRate: null,
-            PurchasePrice: "800.00",
-            SalesPrice: "1200.00",
+            PurchasePrice: 800.00m,
+            SalesPrice: 1200.00m,
+            null,
+            null,
+            null,
             RowVersion: Convert.ToBase64String(item.RowVersion)
         );
 
@@ -131,7 +137,7 @@ public class ItemsTests
         Assert.Equal("Updated Name", result.Name);
         Assert.Equal("kutu", result.Unit);
         Assert.Equal(18, result.VatRate);
-        Assert.Equal("1200.00", result.SalesPrice);
+        Assert.Equal(1200.00m, result.SalesPrice);
     }
 
     #endregion
@@ -297,7 +303,10 @@ public class ItemsTests
             VatRate: 20,
             DefaultWithholdingRate: null,
             PurchasePrice: null,
-            SalesPrice: null
+            SalesPrice: null,
+            PurchaseAccountCode: null,
+            SalesAccountCode: null,
+            UsefulLifeYears: null
         );
 
         // ACT & ASSERT - Exception bekliyoruz

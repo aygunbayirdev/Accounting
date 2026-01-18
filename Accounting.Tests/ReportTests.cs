@@ -1,6 +1,10 @@
 using Accounting.Application.Common.Abstractions; // For IStockService
 using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Reports.Queries;
+using Accounting.Application.Reports.Queries.GetContactStatement;
+using Accounting.Application.Reports.Queries.GetDashboardStats;
+using Accounting.Application.Reports.Queries.GetProfitLoss;
+using Accounting.Application.Reports.Queries.GetStockStatus;
 using Accounting.Application.Services; // For IContactBalanceService
 using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
@@ -114,7 +118,7 @@ public class ReportTests
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.NotNull(result);
-        Assert.Equal("1180.00", result.DailySalesTotal); 
+        Assert.Equal(1180.00m, result.DailySalesTotal); 
     }
 
     [Fact]

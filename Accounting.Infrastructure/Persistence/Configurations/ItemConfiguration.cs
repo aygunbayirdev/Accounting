@@ -17,6 +17,10 @@ public class ItemConfiguration : IEntityTypeConfiguration<Item>
         b.Property(x => x.Unit).IsRequired().HasMaxLength(16);
         b.Property(x => x.VatRate).IsRequired();
 
+        b.Property(e => e.PurchaseAccountCode).HasMaxLength(16);
+        b.Property(e => e.SalesAccountCode).HasMaxLength(16);
+        b.Property(e => e.UsefulLifeYears);
+
         b.Property(x => x.PurchasePrice).HasColumnType("decimal(18,4)");
         b.Property(x => x.SalesPrice).HasColumnType("decimal(18,4)");
 

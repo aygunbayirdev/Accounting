@@ -73,8 +73,11 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
                                x.Unit,
                                x.VatRate,
                                x.DefaultWithholdingRate ?? 0,
-                               x.PurchasePrice == null ? null : x.PurchasePrice.Value,
-                               x.SalesPrice == null ? null : x.SalesPrice.Value,
+                               x.PurchasePrice,
+                               x.SalesPrice,
+                               x.PurchaseAccountCode,
+                               x.SalesAccountCode,
+                               x.UsefulLifeYears,
                                x.CreatedAtUtc,
                                x.UpdatedAtUtc))
                            .ToListAsync(ct);
@@ -84,7 +87,7 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, PagedResult<Item
             r.PageNumber,
             r.PageSize,
             items,
-            null // Totals
+            null
         );
     }
 }

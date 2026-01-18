@@ -37,14 +37,6 @@ public class SoftDeleteInvoiceHandler : IRequestHandler<SoftDeleteInvoiceCommand
             throw new BusinessRuleException(
                 "Cannot delete invoice with linked payments. Please delete payments first.");
 
-        // ExpenseList kontrolü (PostToBill'den gelen)
-        var hasExpenseLines = await _db.ExpenseLists
-            .AnyAsync(e => e.PostedInvoiceId == req.Id && !e.IsDeleted, ct);
-
-        if (hasExpenseLines)
-            throw new BusinessRuleException(
-                "Cannot delete invoice posted from expense list. Please delete expense list first.");
-
         // concurrency
         byte[] originalBytes;
         try

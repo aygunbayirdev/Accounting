@@ -81,7 +81,7 @@ public class OrderTests
             Description: "New Order",
             Lines: new List<CreateOrderLineDto>
             {
-                new CreateOrderLineDto(1, "Item A", "5", "100", 18)
+                new CreateOrderLineDto(1, "Item A", 5.00m, 100.00m, 18)
             }
         );
 
@@ -108,7 +108,7 @@ public class OrderTests
             Description: "Updated Order",
             Lines: new List<UpdateOrderLineDto>
             {
-                new UpdateOrderLineDto(1, 1, "Item A", "20", "100", 18) // New Qty 20
+                new UpdateOrderLineDto(1, 1, "Item A", 20.000m, 100.0000m, 20)
             },
             RowVersion: rowVersion
         );

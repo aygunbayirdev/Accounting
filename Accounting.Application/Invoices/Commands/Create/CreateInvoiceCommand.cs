@@ -1,5 +1,4 @@
 using Accounting.Application.Common.JsonConverters;
-using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
 using System.Text.Json.Serialization;
@@ -12,6 +11,7 @@ public record CreateInvoiceCommand(
     string Currency,
     List<CreateInvoiceLineDto> Lines,
     InvoiceType Type,
+    DocumentType? DocumentType,
     string? WaybillNumber,
     DateTime? WaybillDateUtc,
     DateTime? PaymentDueDateUtc

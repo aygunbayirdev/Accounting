@@ -50,9 +50,6 @@ public static class DataSeeder
         // 6) Cash/Bank Accounts
         await SeedCashBankAccountsAsync(db, branchIds, ct);
 
-        // 7) ExpenseDefinitions
-        await SeedExpenseDefinitionsAsync(db, branchIds, ct);
-
         // Lookup'lar (seed sonrası)
         var contactIds = await db.Contacts.AsNoTracking().OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(ct);
         var customerIds = await db.Contacts.AsNoTracking().Where(x => x.IsCustomer).OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(ct);
@@ -82,12 +79,6 @@ public static class DataSeeder
 
         // 11) Payments + balance recalc
         await SeedPaymentsAsync(db, branchIds, contactIds, accountIds, invoiceBalanceService, accountBalanceService, now, R2, ct);
-
-        // 12) ExpenseLists
-        await SeedExpenseListsAsync(db, branchIds, vendorIds, now, R2, ct);
-
-        // 13) FixedAssets
-        await SeedFixedAssetsAsync(db, branchIds, now, R2, R4, ct);
 
         // 14) Cheques (Çek/Senet)
         await SeedChequesAsync(db, branchIds, customerIds, vendorIds, now, R2, ct);
@@ -346,21 +337,286 @@ public static class DataSeeder
         var categoryIds = await db.Categories.AsNoTracking().OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(ct);
 
         var items = new List<Item>
-        {
-            new() { BranchId = branchIds[0 % branchIds.Count], CategoryId = categoryIds[0], Code = "LAPTOP01", Name = "Dizüstü Bilgisayar", Unit = "Adet", SalesPrice = R4(15000m), PurchasePrice = R4(12000m), VatRate = 20 },
-            new() { BranchId = branchIds[0 % branchIds.Count], CategoryId = categoryIds[0], Code = "MOUSE01", Name = "Kablosuz Mouse", Unit = "Adet", SalesPrice = R4(250m), PurchasePrice = R4(180m), VatRate = 20 },
-            new() { BranchId = branchIds[1 % branchIds.Count], CategoryId = categoryIds[1], Code = "KAHVE01", Name = "Filtre Kahve 1kg", Unit = "Kg", SalesPrice = R4(320m), PurchasePrice = R4(240m), VatRate = 10 },
-            new() { BranchId = branchIds[1 % branchIds.Count], CategoryId = categoryIds[1], Code = "CAY01", Name = "Siyah Çay 500g", Unit = "Paket", SalesPrice = R4(85m), PurchasePrice = R4(60m), VatRate = 10 },
-            new() { BranchId = branchIds[2 % branchIds.Count], CategoryId = categoryIds[2], Code = "KALEM01", Name = "Tükenmez Kalem (12'li)", Unit = "Paket", SalesPrice = R4(48m), PurchasePrice = R4(32m), VatRate = 20 },
-            new() { BranchId = branchIds[2 % branchIds.Count], CategoryId = categoryIds[3], Code = "DETERJAN01", Name = "Çamaşır Deterjanı 5L", Unit = "Adet", SalesPrice = R4(180m), PurchasePrice = R4(130m), VatRate = 20 },
-            new() { BranchId = branchIds[0 % branchIds.Count], CategoryId = categoryIds[4], Code = "SERVIS01", Name = "Teknik Destek Hizmeti", Unit = "Saat", SalesPrice = R4(500m), PurchasePrice = R4(0m), VatRate = 20 },
-            new() { BranchId = branchIds[1 % branchIds.Count], CategoryId = categoryIds[0], Code = "TABLET01", Name = "Tablet 10 inç", Unit = "Adet", SalesPrice = R4(8500m), PurchasePrice = R4(6800m), VatRate = 20 },
-            new() { BranchId = branchIds[2 % branchIds.Count], CategoryId = categoryIds[2], Code = "DEFTER01", Name = "Spiralli Defter A4", Unit = "Adet", SalesPrice = R4(35m), PurchasePrice = R4(22m), VatRate = 10 },
-            new() { BranchId = branchIds[0 % branchIds.Count], CategoryId = categoryIds[3], Code = "SABUN01", Name = "Sıvı Sabun 5L", Unit = "Adet", SalesPrice = R4(95m), PurchasePrice = R4(65m), VatRate = 10 }
-        };
+{
+    // Elektronik Ürünler (Inventory - Stoklu)
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        CategoryId = categoryIds[0],
+        Code = "LAPTOP01",
+        Name = "Dizüstü Bilgisayar",
+        Type = ItemType.Inventory,  // 🆕
+        Unit = "Adet",
+        SalesPrice = R4(15000m),
+        PurchasePrice = R4(12000m),
+        VatRate = 20,
+        PurchaseAccountCode = "153",  // 🆕 Ticari Mallar
+        SalesAccountCode = "600"      // 🆕 Yurt İçi Satışlar
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        CategoryId = categoryIds[0],
+        Code = "MOUSE01",
+        Name = "Kablosuz Mouse",
+        Type = ItemType.Inventory,
+        Unit = "Adet",
+        SalesPrice = R4(250m),
+        PurchasePrice = R4(180m),
+        VatRate = 20,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        CategoryId = categoryIds[0],
+        Code = "TABLET01",
+        Name = "Tablet 10 inç",
+        Type = ItemType.Inventory,
+        Unit = "Adet",
+        SalesPrice = R4(8500m),
+        PurchasePrice = R4(6800m),
+        VatRate = 20,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+
+    // Gıda Ürünleri (Inventory - Stoklu)
+    new()
+    {
+        BranchId = branchIds[1 % branchIds.Count],
+        CategoryId = categoryIds[1],
+        Code = "KAHVE01",
+        Name = "Filtre Kahve 1kg",
+        Type = ItemType.Inventory,
+        Unit = "Kg",
+        SalesPrice = R4(320m),
+        PurchasePrice = R4(240m),
+        VatRate = 10,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+    new()
+    {
+        BranchId = branchIds[1 % branchIds.Count],
+        CategoryId = categoryIds[1],
+        Code = "CAY01",
+        Name = "Siyah Çay 500g",
+        Type = ItemType.Inventory,
+        Unit = "Paket",
+        SalesPrice = R4(85m),
+        PurchasePrice = R4(60m),
+        VatRate = 10,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+
+    // Kırtasiye Ürünleri (Inventory - Stoklu)
+    new()
+    {
+        BranchId = branchIds[2 % branchIds.Count],
+        CategoryId = categoryIds[2],
+        Code = "KALEM01",
+        Name = "Tükenmez Kalem (12'li)",
+        Type = ItemType.Inventory,
+        Unit = "Paket",
+        SalesPrice = R4(48m),
+        PurchasePrice = R4(32m),
+        VatRate = 20,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+    new()
+    {
+        BranchId = branchIds[2 % branchIds.Count],
+        CategoryId = categoryIds[2],
+        Code = "DEFTER01",
+        Name = "Spiralli Defter A4",
+        Type = ItemType.Inventory,
+        Unit = "Adet",
+        SalesPrice = R4(35m),
+        PurchasePrice = R4(22m),
+        VatRate = 10,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+
+    // Temizlik Ürünleri (Inventory - Stoklu)
+    new()
+    {
+        BranchId = branchIds[2 % branchIds.Count],
+        CategoryId = categoryIds[3],
+        Code = "DETERJAN01",
+        Name = "Çamaşır Deterjanı 5L",
+        Type = ItemType.Inventory,
+        Unit = "Adet",
+        SalesPrice = R4(180m),
+        PurchasePrice = R4(130m),
+        VatRate = 20,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        CategoryId = categoryIds[3],
+        Code = "SABUN01",
+        Name = "Sıvı Sabun 5L",
+        Type = ItemType.Inventory,
+        Unit = "Adet",
+        SalesPrice = R4(95m),
+        PurchasePrice = R4(65m),
+        VatRate = 10,
+        PurchaseAccountCode = "153",
+        SalesAccountCode = "600"
+    },
+
+    // Hizmetler (Service - Stok Takibi Yok)
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        CategoryId = categoryIds[4],
+        Code = "SERVIS01",
+        Name = "Teknik Destek Hizmeti",
+        Type = ItemType.Service,  // 🆕 HİZMET
+        Unit = "Saat",
+        SalesPrice = R4(500m),
+        PurchasePrice = null,  // 🆕 Hizmetlerde alış fiyatı olmaz genelde
+        VatRate = 20,
+        PurchaseAccountCode = null,
+        SalesAccountCode = "602"  // 🆕 Hizmet Satışları
+    },
+
+    // 🆕 EXPENSE TYPE ITEMS (Masraflar)
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "EXP001",
+        Name = "Elektrik Gideri",
+        Type = ItemType.Expense,
+        Unit = "ay",
+        SalesPrice = null,  // Masraflar satılmaz
+        PurchasePrice = null,
+        VatRate = 20,
+        PurchaseAccountCode = "770",  // Genel Üretim Giderleri
+        SalesAccountCode = null
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "EXP002",
+        Name = "Su Gideri",
+        Type = ItemType.Expense,
+        Unit = "ay",
+        SalesPrice = null,
+        PurchasePrice = null,
+        VatRate = 20,
+        PurchaseAccountCode = "770",
+        SalesAccountCode = null
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "EXP003",
+        Name = "Kira Gideri",
+        Type = ItemType.Expense,
+        Unit = "ay",
+        SalesPrice = null,
+        PurchasePrice = null,
+        VatRate = 0,  // Kira KDV'siz genelde
+        PurchaseAccountCode = "770",
+        SalesAccountCode = null
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "EXP004",
+        Name = "İnternet Gideri",
+        Type = ItemType.Expense,
+        Unit = "ay",
+        SalesPrice = null,
+        PurchasePrice = null,
+        VatRate = 20,
+        PurchaseAccountCode = "770",
+        SalesAccountCode = null
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "EXP005",
+        Name = "Taksi/Ulaşım Gideri",
+        Type = ItemType.Expense,
+        Unit = "adet",
+        SalesPrice = null,
+        PurchasePrice = null,
+        VatRate = 20,
+        PurchaseAccountCode = "770",
+        SalesAccountCode = null
+    },
+
+    // 🆕 FIXED ASSET TYPE ITEMS (Demirbaşlar)
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "FA001",
+        Name = "Dizüstü Bilgisayar (Demirbaş)",
+        Type = ItemType.FixedAsset,
+        Unit = "adet",
+        SalesPrice = null,  // Demirbaşlar satılmaz (satılırsa hurda değeri)
+        PurchasePrice = R4(25000m),
+        VatRate = 20,
+        PurchaseAccountCode = "255",  // Demirbaşlar
+        SalesAccountCode = null,
+        UsefulLifeYears = 5  // 🆕 Faydalı ömür
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "FA002",
+        Name = "Ofis Masası",
+        Type = ItemType.FixedAsset,
+        Unit = "adet",
+        SalesPrice = null,
+        PurchasePrice = R4(5000m),
+        VatRate = 20,
+        PurchaseAccountCode = "255",
+        SalesAccountCode = null,
+        UsefulLifeYears = 10
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "FA003",
+        Name = "Ofis Sandalyesi",
+        Type = ItemType.FixedAsset,
+        Unit = "adet",
+        SalesPrice = null,
+        PurchasePrice = R4(3000m),
+        VatRate = 20,
+        PurchaseAccountCode = "255",
+        SalesAccountCode = null,
+        UsefulLifeYears = 7
+    },
+    new()
+    {
+        BranchId = branchIds[0 % branchIds.Count],
+        Code = "FA004",
+        Name = "Yazıcı/Tarayıcı",
+        Type = ItemType.FixedAsset,
+        Unit = "adet",
+        SalesPrice = null,
+        PurchasePrice = R4(8000m),
+        VatRate = 20,
+        PurchaseAccountCode = "255",
+        SalesAccountCode = null,
+        UsefulLifeYears = 5
+    }
+};
 
         db.Items.AddRange(items);
         await db.SaveChangesAsync(ct);
+
     }
 
     private static async Task SeedCashBankAccountsAsync(AppDbContext db, List<int> branchIds, CancellationToken ct)
@@ -382,24 +638,6 @@ public static class DataSeeder
         await db.SaveChangesAsync(ct);
     }
 
-    private static async Task SeedExpenseDefinitionsAsync(AppDbContext db, List<int> branchIds, CancellationToken ct)
-    {
-        if (await db.ExpenseDefinitions.AnyAsync(ct)) return;
-
-        var now = DateTime.UtcNow;
-
-        var definitions = new List<ExpenseDefinition>
-        {
-            new() { BranchId = branchIds[0 % branchIds.Count], Code = "ULASIM", Name = "Ulaşım Giderleri", DefaultVatRate = 20, CreatedAtUtc = now },
-            new() { BranchId = branchIds[0 % branchIds.Count], Code = "KIRTASIYE", Name = "Kırtasiye Giderleri", DefaultVatRate = 20, CreatedAtUtc = now },
-            new() { BranchId = branchIds[0 % branchIds.Count], Code = "YEMEK", Name = "Yemek Giderleri", DefaultVatRate = 10, CreatedAtUtc = now },
-            new() { BranchId = branchIds[0 % branchIds.Count], Code = "KONAKLAMA", Name = "Konaklama Giderleri", DefaultVatRate = 10, CreatedAtUtc = now },
-            new() { BranchId = branchIds[1 % branchIds.Count], Code = "YAKIT", Name = "Yakıt Giderleri", DefaultVatRate = 20, CreatedAtUtc = now }
-        };
-
-        db.ExpenseDefinitions.AddRange(definitions);
-        await db.SaveChangesAsync(ct);
-    }
 
     private static async Task SeedStockMovementsAndStocksAsync(
         AppDbContext db,
@@ -752,102 +990,6 @@ public static class DataSeeder
             await accountBalanceService.RecalculateBalanceAsync(accountId, ct);
         }
 
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static async Task SeedExpenseListsAsync(
-        AppDbContext db,
-        List<int> branchIds,
-        List<int> vendorIds,
-        DateTime now,
-        Func<decimal, decimal> R2,
-        CancellationToken ct)
-    {
-        if (await db.ExpenseLists.AnyAsync(ct)) return;
-
-        var lists = new List<ExpenseList>();
-
-        for (int i = 1; i <= 10; i++)
-        {
-            var list = new ExpenseList
-            {
-                BranchId = branchIds[(i - 1) % branchIds.Count],
-                Name = $"Masraf Listesi {i}",
-                Status = (i % 3 == 0) ? ExpenseListStatus.Reviewed : ExpenseListStatus.Draft,
-                CreatedAtUtc = now.AddDays(-i),
-            };
-
-            var supplierId = vendorIds[(i - 1) % vendorIds.Count];
-            var amount = R2(50m + i * 12.4m);
-            var vatRate = (i % 5 == 0) ? 1 : 20;
-
-            list.Lines.Add(new ExpenseLine
-            {
-                DateUtc = now.AddDays(-i).AddHours(-2),
-                SupplierId = supplierId,
-                Currency = (i % 4 == 0) ? "USD" : "TRY",
-                Amount = amount,
-                VatRate = vatRate,
-                Category = (i % 2 == 0) ? "Ulaşım" : "Kırtasiye",
-                Notes = (i % 3 == 0) ? "Toplantı gideri" : null,
-                CreatedAtUtc = now.AddDays(-i).AddHours(-2)
-            });
-
-            lists.Add(list);
-        }
-
-        db.ExpenseLists.AddRange(lists);
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static async Task SeedFixedAssetsAsync(
-        AppDbContext db,
-        List<int> branchIds,
-        DateTime now,
-        Func<decimal, decimal> R2,
-        Func<decimal, decimal> R4,
-        CancellationToken ct)
-    {
-        if (await db.FixedAssets.AnyAsync(ct)) return;
-
-        var assets = new List<FixedAsset>
-        {
-            new()
-            {
-                BranchId = branchIds[0 % branchIds.Count],
-                Code = "DMR001",
-                Name = "Ofis Bilgisayarı",
-                PurchaseDateUtc = now.AddMonths(-18),
-                PurchasePrice = R2(25000m),
-                UsefulLifeYears = 5,
-                DepreciationRatePercent = R4(100m / 5m),
-                CreatedAtUtc = now.AddMonths(-18)
-            },
-            new()
-            {
-                BranchId = branchIds[1 % branchIds.Count],
-                Code = "DMR002",
-                Name = "Ofis Mobilyası",
-                PurchaseDateUtc = now.AddMonths(-30),
-                PurchasePrice = R2(40000m),
-                UsefulLifeYears = 8,
-                DepreciationRatePercent = R4(100m / 8m),
-                CreatedAtUtc = now.AddMonths(-30)
-            },
-            new()
-            {
-                BranchId = branchIds[2 % branchIds.Count],
-                Code = "DMR003",
-                Name = "Yazıcı ve Çevre Donanımı",
-                PurchaseDateUtc = now.AddMonths(-6),
-                PurchasePrice = R2(12000m),
-                UsefulLifeYears = 4,
-                DepreciationRatePercent = R4(100m / 4m),
-                CreatedAtUtc = now.AddMonths(-6)
-            }
-        };
-
-        db.FixedAssets.AddRange(assets);
         await db.SaveChangesAsync(ct);
     }
 

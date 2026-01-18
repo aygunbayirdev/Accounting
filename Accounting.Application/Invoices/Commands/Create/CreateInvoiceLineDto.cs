@@ -5,7 +5,6 @@ namespace Accounting.Application.Invoices.Commands.Create;
 
 public record CreateInvoiceLineDto(
     int? ItemId,
-    int? ExpenseDefinitionId,
 
     [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Qty,

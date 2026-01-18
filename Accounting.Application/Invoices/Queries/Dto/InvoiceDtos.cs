@@ -6,7 +6,6 @@ namespace Accounting.Application.Invoices.Queries.Dto;
 public record InvoiceLineDto(
     int Id,
     int? ItemId,
-    int? ExpenseDefinitionId,
     string ItemCode,
     string ItemName,
     string Unit,
@@ -73,9 +72,9 @@ public record InvoiceDetailDto(
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal Balance,
 
-
     IReadOnlyList<InvoiceLineDto> Lines,
     int Type,
+    int DocumentType,
     int BranchId,
     string BranchCode,
     string BranchName,
@@ -83,9 +82,9 @@ public record InvoiceDetailDto(
     DateTime? WaybillDateUtc,
     DateTime? PaymentDueDateUtc,
 
-    string RowVersion,       // base64
-    DateTime CreatedAtUtc,   // Audit
-    DateTime? UpdatedAtUtc   // Audit
+    string RowVersion,
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );
 
 public record InvoiceListItemDto(
@@ -93,8 +92,9 @@ public record InvoiceListItemDto(
     int ContactId,
     string ContactCode,
     string ContactName,
-    string InvoiceNumber,    // Fatura numarası
-    int Type,             // Sales / Purchase
+    string InvoiceNumber,
+    int Type,
+    int DocumentType,
     DateTime DateUtc,
     string Currency,
 
@@ -114,6 +114,6 @@ public record InvoiceListItemDto(
     string BranchCode,
     string BranchName,
 
-    DateTime CreatedAtUtc,   // Audit
-    DateTime? UpdatedAtUtc   // Audit
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );

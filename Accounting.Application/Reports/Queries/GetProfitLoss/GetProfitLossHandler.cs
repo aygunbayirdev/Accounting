@@ -19,7 +19,7 @@ public class GetProfitLossHandler(IAppDbContext db) : IRequestHandler<GetProfitL
             .AsNoTracking()
             .Where(i => i.DateUtc >= dateFrom && i.DateUtc <= dateTo && !i.IsDeleted);
 
-        // Branch filter (opsiyonel - null ise tüm þubeler)
+        // Branch filter
         if (request.BranchId.HasValue)
             invoicesQuery = invoicesQuery.Where(i => i.BranchId == request.BranchId.Value);
 
@@ -28,33 +28,37 @@ public class GetProfitLossHandler(IAppDbContext db) : IRequestHandler<GetProfitL
             .ToListAsync(ct);
 
         var income = invoices.Where(i => i.Type == InvoiceType.Sales).Sum(i => i.TotalNet);
-        var cogs = invoices.Where(i => i.Type == InvoiceType.Purchase).Sum(i => i.TotalNet); // Simplified: Buys are Costs
-
+        var cogs = invoices.Where(i => i.Type == InvoiceType.Purchase).Sum(i => i.TotalNet);
         var invoiceVat = invoices.Sum(i => i.Type == InvoiceType.Sales ? i.TotalVat : -i.TotalVat);
 
-        // 2. Expenses
-        var expensesQuery = db.ExpenseLines
+        // 2. Expenses (Purchase Invoice içindeki Expense tipindeki Item'lar)
+        var expenseLinesQuery = db.InvoiceLines
             .AsNoTracking()
-            .Where(e => e.DateUtc >= dateFrom && e.DateUtc <= dateTo && !e.IsDeleted);
+            .Include(l => l.Invoice)
+            .Include(l => l.Item)
+            .Where(l => !l.IsDeleted
+                && l.Invoice.Type == InvoiceType.Purchase
+                && l.Invoice.DateUtc >= dateFrom
+                && l.Invoice.DateUtc <= dateTo
+                && !l.Invoice.IsDeleted
+                && l.Item != null
+                && l.Item.Type == ItemType.Expense);  // Sadece Expense tipindeki Item'lar
 
-        // Branch filter for expenses (ExpenseLine -> ExpenseList -> BranchId)
+        // Branch filter
         if (request.BranchId.HasValue)
-            expensesQuery = expensesQuery.Where(e => e.ExpenseList.BranchId == request.BranchId.Value);
+            expenseLinesQuery = expenseLinesQuery.Where(l => l.Invoice.BranchId == request.BranchId.Value);
 
-        var expenses = await expensesQuery
-            .Select(e => new { e.Amount, e.VatRate })
+        var expenseLines = await expenseLinesQuery
+            .Select(l => new { l.Net, l.Vat })
             .ToListAsync(ct);
 
-        var totalExpenses = expenses.Sum(e => e.Amount);
-
-        // Expense VAT calculation (Amount is Net, VAT is calculated from Rate)
-        // Vat = Amount * Rate / 100
-        var expenseVat = expenses.Sum(e => e.Amount * e.VatRate / 100m);
+        var totalExpenses = expenseLines.Sum(e => e.Net);
+        var expenseVat = expenseLines.Sum(e => e.Vat);
 
         // 3. Totals
         var grossProfit = income - cogs;
         var netProfit = grossProfit - totalExpenses;
-        var totalVat = invoiceVat - expenseVat; // Net VAT Position (Payable/Receivable)
+        var totalVat = invoiceVat - expenseVat;
 
         return new ProfitLossDto(
             income,

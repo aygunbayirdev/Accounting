@@ -99,6 +99,7 @@ public class ChequesTests
         var command = new UpdateChequeStatusCommand(
             Id: 1,
             NewStatus: ChequeStatus.Paid,
+            Convert.ToBase64String(cheque.RowVersion),
             CashBankAccountId: 10 // Dummy Account
         );
 

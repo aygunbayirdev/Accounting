@@ -50,7 +50,7 @@ public class TransferStockHandlerTests
             SourceWarehouseId: 1,
             TargetWarehouseId: 2,
             ItemId: 10,
-            Quantity: "10",
+            Quantity: 10.00m,
             TransactionDateUtc: DateTime.UtcNow,
             Description: "Test Transfer"
         );
@@ -97,7 +97,7 @@ public class TransferStockHandlerTests
         await db.SaveChangesAsync();
 
         var handler = new TransferStockHandler(db);
-        var command = new TransferStockCommand(1, 2, 10, "10.000", DateTime.UtcNow, "Overdraft");
+        var command = new TransferStockCommand(1, 2, 10, 10.000m, DateTime.UtcNow, "Overdraft");
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));
@@ -120,7 +120,7 @@ public class TransferStockHandlerTests
         await db.SaveChangesAsync();
 
         var handler = new TransferStockHandler(db);
-        var command = new TransferStockCommand(1, 2, 99, "10.000", DateTime.UtcNow, "Cross Branch");
+        var command = new TransferStockCommand(1, 2, 99, 10.000m, DateTime.UtcNow, "Cross Branch");
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(command, CancellationToken.None));

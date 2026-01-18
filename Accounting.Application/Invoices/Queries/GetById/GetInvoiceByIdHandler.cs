@@ -13,7 +13,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    
+
     public GetInvoiceByIdHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -38,7 +38,6 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             .Select(l => new InvoiceLineDto(
                 l.Id,
                 l.ItemId,
-                l.ExpenseDefinitionId, // Added
                 l.ItemCode,   // snapshot
                 l.ItemName,   // snapshot
                 l.Unit,       // snapshot
@@ -73,6 +72,7 @@ public class GetInvoiceByIdHandler : IRequestHandler<GetInvoiceByIdQuery, Invoic
             inv.Balance,
             lines,
             (int)inv.Type,
+            (int)inv.DocumentType,
             inv.BranchId,
             inv.Branch.Code,
             inv.Branch.Name,

@@ -10,7 +10,6 @@ public class InvoiceLine : IHasTimestamps, ISoftDeletable
     // FK'ler
     public int InvoiceId { get; set; }
     public int? ItemId { get; set; }
-    public int? ExpenseDefinitionId { get; set; }
 
     // ✅ Snapshot alanlar (o anın kopyası)
     public string ItemCode { get; set; } = null!;
@@ -27,14 +26,14 @@ public class InvoiceLine : IHasTimestamps, ISoftDeletable
 
     public decimal DiscountRate { get; set; }   // İskonto Oranı (%)
     public decimal DiscountAmount { get; set; } // İskonto Tutarı
-    
+
     public decimal Net { get; set; }        // Net/Matrah (Gross - Discount)
-    
+
     public decimal Vat { get; set; }        // KDV Tutarı (Net * VatRate)
-    
+
     public int WithholdingRate { get; set; }    // Tevkifat Oranı (%) (Örn: 50 = 5/10)
     public decimal WithholdingAmount { get; set; } // Tevkifat Tutarı (Vat * Rate)
-    
+
     public decimal GrandTotal { get; set; } // Genel Toplam (Net + Vat)
     // Ödenecek (Payable) = GrandTotal - WithholdingAmount (bunu hesaplayabiliriz veya satırda tutabiliriz)
 
@@ -49,5 +48,4 @@ public class InvoiceLine : IHasTimestamps, ISoftDeletable
     // Navigations
     public Invoice Invoice { get; set; } = null!;
     public Item? Item { get; set; }
-    public ExpenseDefinition? ExpenseDefinition { get; set; }
 }

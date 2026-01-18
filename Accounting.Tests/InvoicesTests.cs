@@ -67,15 +67,16 @@ public class InvoicesTests
 
         var command = new CreateInvoiceCommand(
             ContactId: 1,
-            DateUtc: DateTime.UtcNow.ToString("O"),
+            DateUtc: DateTime.UtcNow,
             Currency: "TRY",
-            Type: "Sales",
+            Type: InvoiceType.Sales,
+            DocumentType: DocumentType.Invoice,
             WaybillNumber: null,
             WaybillDateUtc: null,
-            PaymentDueDateUtc: DateTime.UtcNow.AddDays(7).ToString("O"),
+            PaymentDueDateUtc: DateTime.UtcNow.AddDays(7),
             Lines: new List<CreateInvoiceLineDto>
             {
-                new CreateInvoiceLineDto(10, null, "1", "100", 20, "0", 0)
+                new CreateInvoiceLineDto(10, 1.00m, 100.00m, 20, 0.00m, 0)
             }
         );
 
@@ -124,21 +125,22 @@ public class InvoicesTests
             DateUtc: DateTime.UtcNow,
             Currency: "TRY",
             ContactId: 1,
-            Type: "Sales",
+            Type: InvoiceType.Sales,
+            DocumentType: DocumentType.Invoice,
             WaybillNumber: null,
             WaybillDateUtc: null,
             PaymentDueDateUtc: null,
             Lines: new List<UpdateInvoiceLineDto>
             {
                 // New Line
-                new UpdateInvoiceLineDto(0, 10, null, "2", "100", 20, "0", 0) 
+                new UpdateInvoiceLineDto(0, 10, 2.00m, 100.00m, 20, 0.00m, 0) 
             }
         );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(1, result.Lines.Count); // use Lines instead of Items
-        Assert.Equal("200.00", result.TotalLineGross); // 2 * 100
+        Assert.Equal(200.00m, result.TotalLineGross); // 2 * 100
     }
 
     [Fact]

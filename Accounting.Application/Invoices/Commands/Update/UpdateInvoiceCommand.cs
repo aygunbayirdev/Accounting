@@ -6,21 +6,21 @@ using System.Text.Json.Serialization;
 
 public sealed record UpdateInvoiceCommand(
     int Id,
-    string RowVersionBase64,
     DateTime DateUtc,
     string Currency,
     int ContactId,
     InvoiceType Type,
+    DocumentType? DocumentType,
     string? WaybillNumber,
     DateTime? WaybillDateUtc,
     DateTime? PaymentDueDateUtc,
-    IReadOnlyList<UpdateInvoiceLineDto> Lines
+    IReadOnlyList<UpdateInvoiceLineDto> Lines,
+    string RowVersionBase64
 ) : IRequest<InvoiceDetailDto>;
 
 public sealed record UpdateInvoiceLineDto(
     int Id,
     int? ItemId,
-    int? ExpenseDefinitionId,
 
     [property: JsonConverter(typeof(QuantityJsonConverter))]
     decimal Qty,

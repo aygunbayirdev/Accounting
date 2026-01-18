@@ -1,12 +1,10 @@
 ﻿using Accounting.Application.Common.Abstractions;
-using Accounting.Application.Common.Utils;
-using Accounting.Application.Common.Exceptions;
+using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Items.Queries.Dto;
 using Accounting.Domain.Entities;
+using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-
-using Accounting.Application.Common.Interfaces;
 
 namespace Accounting.Application.Items.Commands.Create;
 
@@ -14,6 +12,7 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUserService;
+
     public CreateItemHandler(IAppDbContext db, ICurrentUserService currentUserService)
     {
         _db = db;
@@ -22,56 +21,51 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, ItemDetailDt
 
     public async Task<ItemDetailDto> Handle(CreateItemCommand r, CancellationToken ct)
     {
-        var branchId = _currentUserService.BranchId ?? throw new UnauthorizedAccessException();
+        var branchId = _currentUserService.BranchId
+            ?? throw new UnauthorizedAccessException("User must have a BranchId");
 
-        // Check for duplicate code
-        var exists = await _db.Items.AnyAsync(x => x.BranchId == branchId && x.Code == r.Code.Trim(), ct);
-        if (exists) throw new BusinessRuleException($"Bu kod ({r.Code}) ile kayıtlı stok/hizmet zaten var.");
-
-        var e = new Item
+        var item = new Item
         {
             BranchId = branchId,
             CategoryId = r.CategoryId,
             Code = r.Code.Trim(),
             Name = r.Name.Trim(),
-            Type = (Domain.Enums.ItemType)r.Type,
+            Type = (ItemType)r.Type,
             Unit = r.Unit.Trim(),
             VatRate = r.VatRate,
             DefaultWithholdingRate = r.DefaultWithholdingRate,
             PurchasePrice = r.PurchasePrice,
-            SalesPrice = r.SalesPrice
-            // Created/Updated defaults via interceptor
+            SalesPrice = r.SalesPrice,
+            PurchaseAccountCode = r.PurchaseAccountCode?.Trim(),
+            SalesAccountCode = r.SalesAccountCode?.Trim(),
+            UsefulLifeYears = r.UsefulLifeYears
         };
 
-        _db.Items.Add(e);
+        _db.Items.Add(item);
         await _db.SaveChangesAsync(ct);
 
-        // Fresh read
-        var saved = await _db.Items.AsNoTracking().FirstAsync(x => x.Id == e.Id, ct);
-
-        // Kategori ismi look up
-        string? catName = null;
-        if (e.CategoryId.HasValue)
-        {
-            var cat = await _db.Categories.FindAsync(new object[] { e.CategoryId.Value }, ct);
-            catName = cat?.Name;
-        }
+        var category = item.CategoryId.HasValue
+            ? await _db.Categories.FindAsync(new object?[] { item.CategoryId.Value }, ct)
+            : null;
 
         return new ItemDetailDto(
-            saved.Id,
-            saved.CategoryId,
-            catName,
-            saved.Code,
-            saved.Name,
-            (int)saved.Type,
-            saved.Unit,
-            saved.VatRate,
-            saved.DefaultWithholdingRate ?? 0,
-            saved.PurchasePrice is null ? null : saved.PurchasePrice.Value,
-            saved.SalesPrice is null ? null : saved.SalesPrice.Value,
-            Convert.ToBase64String(saved.RowVersion),
-            saved.CreatedAtUtc,
-            saved.UpdatedAtUtc
+            item.Id,
+            item.CategoryId,
+            category?.Name,
+            item.Code,
+            item.Name,
+            (int)item.Type,
+            item.Unit,
+            item.VatRate,
+            item.DefaultWithholdingRate ?? 0,
+            item.PurchasePrice,
+            item.SalesPrice,
+            item.PurchaseAccountCode,
+            item.SalesAccountCode,
+            item.UsefulLifeYears,
+            Convert.ToBase64String(item.RowVersion),
+            item.CreatedAtUtc,
+            item.UpdatedAtUtc
         );
     }
 }

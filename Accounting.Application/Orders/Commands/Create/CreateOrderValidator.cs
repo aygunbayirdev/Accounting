@@ -21,9 +21,7 @@ public class CreateOrderValidator : AbstractValidator<CreateOrderCommand>
             .MustAsync(ContactIsValidForBranchAsync).WithMessage("Cari bulunamadı veya bu şubeye ait değil.");
 
         RuleFor(x => x.Type)
-            .IsInEnum()
-            .Must(t => t != InvoiceType.Expense)
-            .WithMessage("Masraf faturası için sipariş oluşturulamaz.");
+            .IsInEnum();            
 
         RuleFor(x => x.Currency)
             .NotEmpty()

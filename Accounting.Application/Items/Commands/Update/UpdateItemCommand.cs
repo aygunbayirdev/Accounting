@@ -1,7 +1,6 @@
 ﻿using Accounting.Application.Common.JsonConverters;
 using Accounting.Application.Items.Queries.Dto;
 using MediatR;
-using System.Data;
 using System.Text.Json.Serialization;
 
 namespace Accounting.Application.Items.Commands.Update;
@@ -11,11 +10,10 @@ public record UpdateItemCommand(
     int? CategoryId,
     string Code,
     string Name,
-    int Type, // ItemType: 1=Inventory, 2=Service
+    int Type,
     string Unit,
     int VatRate,
-
-    int? DefaultWithholdingRate, // Varsayılan tevkifat oranı (%)
+    int? DefaultWithholdingRate,
 
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? PurchasePrice,
@@ -23,5 +21,8 @@ public record UpdateItemCommand(
     [property: JsonConverter(typeof(AmountJsonConverter))]
     decimal? SalesPrice,
 
-    string RowVersion // base64
+    string? PurchaseAccountCode,
+    string? SalesAccountCode,
+    int? UsefulLifeYears,
+    string RowVersion
 ) : IRequest<ItemDetailDto>;

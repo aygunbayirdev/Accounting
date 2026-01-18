@@ -52,9 +52,9 @@ public class PaymentsTests
             AccountId: 10,
             ContactId: null,
             LinkedInvoiceId: null,
-            DateUtc: DateTime.UtcNow.ToString("O"),
+            DateUtc: DateTime.UtcNow,
             Direction: PaymentDirection.In,
-            Amount: "100.50",
+            Amount: 100.50m,
             Currency: "TRY",
             Description: null
         );

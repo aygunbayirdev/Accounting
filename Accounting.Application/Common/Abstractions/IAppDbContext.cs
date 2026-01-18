@@ -20,10 +20,6 @@ public interface IAppDbContext
     DbSet<Payment> Payments { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderLine> OrderLines { get; }
-    DbSet<ExpenseList> ExpenseLists { get; }
-    DbSet<ExpenseLine> ExpenseLines { get; }
-    DbSet<ExpenseDefinition> ExpenseDefinitions { get; }
-    DbSet<FixedAsset> FixedAssets { get; }
     DbSet<Branch> Branches { get; }
     DbSet<Warehouse> Warehouses { get; }
     DbSet<Stock> Stocks { get; }

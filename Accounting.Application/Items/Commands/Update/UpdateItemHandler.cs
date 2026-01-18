@@ -1,13 +1,12 @@
-﻿// Accounting.Application/Items/Commands/Update/UpdateItemHandler.cs
-using Accounting.Application.Common.Abstractions;
-using Accounting.Application.Common.Exceptions;   // ConcurrencyConflictException
-using Accounting.Application.Common.Extensions; // ApplyBranchFilter
-using Accounting.Application.Common.Interfaces; // ICurrentUserService
-using Accounting.Application.Common.Utils;
+﻿using Accounting.Application.Common.Abstractions;
+using Accounting.Application.Common.Exceptions;
+using Accounting.Application.Common.Extensions;
+using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Items.Queries.Dto;
-using Accounting.Domain.Entities;
+using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Accounting.Application.Items.Commands.Update;
 
@@ -24,62 +23,52 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, ItemDetailDt
 
     public async Task<ItemDetailDto> Handle(UpdateItemCommand r, CancellationToken ct)
     {
-        // (1) fetch (tracking)
-        var e = await _db.Items
-            .ApplyBranchFilter(_currentUserService)
-            .FirstOrDefaultAsync(i => i.Id == r.Id && !i.IsDeleted, ct);
-        if (e is null) throw new NotFoundException("Item", r.Id);
-
-        // (3) original rowversion
-        var original = Convert.FromBase64String(r.RowVersion);
-        _db.Entry(e).Property(nameof(Item.RowVersion)).OriginalValue = original;
-
-        // (4) normalize + parse
-        e.CategoryId = r.CategoryId;
-        e.Code = r.Code.Trim();
-        e.Name = r.Name.Trim();
-        e.Type = (Domain.Enums.ItemType)r.Type;
-        e.Unit = r.Unit.Trim();
-        e.VatRate = r.VatRate;
-        e.DefaultWithholdingRate = r.DefaultWithholdingRate;
-
-        e.PurchasePrice = r.PurchasePrice is null ? null : DecimalExtensions.RoundAmount(r.PurchasePrice.Value);
-        e.SalesPrice = r.SalesPrice is null ? null : DecimalExtensions.RoundAmount(r.SalesPrice.Value);
-
-        // (6) save + concurrency
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new ConcurrencyConflictException("Item güncellemesinde eşzamanlılık hatası.");
-        }
-
-        // (7) fresh read
-        // (7) fresh read
-        var fresh = await _db.Items
-            .AsNoTracking()
+        var item = await _db.Items
             .ApplyBranchFilter(_currentUserService)
             .Include(x => x.Category)
-            .FirstAsync(x => x.Id == e.Id, ct);
+            .Where(x => x.Id == r.Id && !x.IsDeleted)
+            .FirstOrDefaultAsync(ct);
 
-        // (8) dto
+        if (item == null)
+            throw new NotFoundException("Item", r.Id);
+
+        var providedVersion = Convert.FromBase64String(r.RowVersion);
+        if (!item.RowVersion.SequenceEqual(providedVersion))
+            throw new ConcurrencyConflictException("Item");
+
+        item.CategoryId = r.CategoryId;
+        item.Code = r.Code.Trim();
+        item.Name = r.Name.Trim();
+        item.Type = (ItemType)r.Type;
+        item.Unit = r.Unit.Trim();
+        item.VatRate = r.VatRate;
+        item.DefaultWithholdingRate = r.DefaultWithholdingRate;
+        item.PurchasePrice = r.PurchasePrice;
+        item.SalesPrice = r.SalesPrice;
+        item.PurchaseAccountCode = r.PurchaseAccountCode?.Trim();
+        item.SalesAccountCode = r.SalesAccountCode?.Trim();
+        item.UsefulLifeYears = r.UsefulLifeYears;
+
+        await _db.SaveChangesAsync(ct);
+
         return new ItemDetailDto(
-            fresh.Id,
-            fresh.CategoryId,
-            fresh.Category?.Name,
-            fresh.Code,
-            fresh.Name,
-            (int)fresh.Type,
-            fresh.Unit,
-            fresh.VatRate,
-            fresh.DefaultWithholdingRate ?? 0,
-            fresh.PurchasePrice is null ? null : fresh.PurchasePrice.Value,
-            fresh.SalesPrice is null ? null : fresh.SalesPrice.Value,
-            Convert.ToBase64String(fresh.RowVersion),
-            fresh.CreatedAtUtc,
-            fresh.UpdatedAtUtc
+            item.Id,
+            item.CategoryId,
+            item.Category?.Name,
+            item.Code,
+            item.Name,
+            (int)item.Type,
+            item.Unit,
+            item.VatRate,
+            item.DefaultWithholdingRate ?? 0,
+            item.PurchasePrice,
+            item.SalesPrice,
+            item.PurchaseAccountCode,
+            item.SalesAccountCode,
+            item.UsefulLifeYears,
+            Convert.ToBase64String(item.RowVersion),
+            item.CreatedAtUtc,
+            item.UpdatedAtUtc
         );
     }
 }

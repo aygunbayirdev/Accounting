@@ -1,15 +1,13 @@
 ﻿using Accounting.Application.Common.Abstractions;
 using Accounting.Application.Common.Exceptions;
 using Accounting.Application.Common.Utils;
-using Accounting.Application.Common.Extensions; // ApplyBranchFilter
+using Accounting.Application.Common.Extensions;
 using Accounting.Application.Invoices.Queries.Dto;
 using Accounting.Application.Services;
 using Accounting.Domain.Entities;
 using Accounting.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
-
 using Accounting.Application.Common.Interfaces;
 
 public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand, InvoiceDetailDto>
@@ -19,7 +17,11 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
     private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUserService;
 
-    public UpdateInvoiceHandler(IAppDbContext ctx, IInvoiceBalanceService balanceService, IMediator mediator, ICurrentUserService currentUserService)
+    public UpdateInvoiceHandler(
+        IAppDbContext ctx,
+        IInvoiceBalanceService balanceService,
+        IMediator mediator,
+        ICurrentUserService currentUserService)
     {
         _ctx = ctx;
         _balanceService = balanceService;
@@ -45,6 +47,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         inv.DateUtc = DateTime.SpecifyKind(r.DateUtc, DateTimeKind.Utc);
         inv.ContactId = r.ContactId;
         inv.Type = r.Type;
+        inv.DocumentType = r.DocumentType ?? inv.DocumentType;  // 🆕 EKLENDI
 
         // 4) Header Fields
         var now = DateTime.UtcNow;
@@ -56,7 +59,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             ? DateTime.SpecifyKind(r.PaymentDueDateUtc.Value, DateTimeKind.Utc)
             : null;
 
-        // Reset Totals before accumulation
+        // Reset Totals
         inv.TotalLineGross = 0;
         inv.TotalDiscount = 0;
         inv.TotalNet = 0;
@@ -64,18 +67,25 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         inv.TotalWithholding = 0;
         inv.TotalGross = 0;
 
-        // Snapshot için gerekli Item'ları ve Expense'leri tek seferde çek
-        var allItemIds = r.Lines.Where(x => x.ItemId.HasValue).Select(x => x.ItemId!.Value).Distinct().ToList();
-        var allExpenseIds = r.Lines.Where(x => x.ExpenseDefinitionId.HasValue).Select(x => x.ExpenseDefinitionId!.Value).Distinct().ToList();
+        // ❌ KALDIRILDI: ExpenseDefinition fetch logic
+        // Sadece Item'ları çek
+        var allItemIds = r.Lines
+            .Where(x => x.ItemId.HasValue)
+            .Select(x => x.ItemId!.Value)
+            .Distinct()
+            .ToList();
 
         var itemsMap = await _ctx.Items
             .Where(i => allItemIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Code, i.Name, i.Unit, i.VatRate, type = i.Type, i.DefaultWithholdingRate })
-            .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
-
-        var expensesMap = await _ctx.ExpenseDefinitions
-            .Where(i => allExpenseIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Code, i.Name })
+            .Select(i => new {
+                i.Id,
+                i.Code,
+                i.Name,
+                i.Unit,
+                i.VatRate,
+                type = i.Type,
+                i.DefaultWithholdingRate
+            })
             .ToDictionaryAsync(i => i.Id, i => (dynamic)i, ct);
 
         var incomingById = r.Lines.Where(x => x.Id > 0).ToDictionary(x => x.Id);
@@ -91,12 +101,11 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         }
 
         // b) Güncellenecekler & Yeni Eklenecekler
-        // Mevcutları güncelle
         foreach (var line in inv.Lines.Where(l => !l.IsDeleted))
         {
             if (incomingById.TryGetValue(line.Id, out var dto))
             {
-                ProcessLine(inv, line, dto, itemsMap, expensesMap, now);
+                ProcessLine(inv, line, dto, itemsMap, now);
             }
         }
 
@@ -105,10 +114,10 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         {
             var nl = new InvoiceLine { CreatedAtUtc = now };
             inv.Lines.Add(nl);
-            ProcessLine(inv, nl, dto, itemsMap, expensesMap, now);
+            ProcessLine(inv, nl, dto, itemsMap, now);
         }
 
-        // 4) UpdatedAt + Header Totals (Accumulated in ProcessLine? No, better to sum after)
+        // UpdatedAt
         inv.UpdatedAtUtc = now;
 
         // RE-SUM from active lines
@@ -122,25 +131,17 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         // Balance Update
         inv.Balance = inv.TotalGross - inv.TotalWithholding;
-        await _balanceService.RecalculateBalanceAsync(inv.Id, ct); // This might override Balance if it sums transactions? 
-        // Logic check: RecalculateBalanceAsync usually sums Invoices - Payments.
-        // It updates `inv.Balance` based on (TotalGross - Paid).
-        // Wait, if Withholding is deducted at source, the "Payable" (Balance) IS (Gross - Withholding).
-        // Does `RecalculateBalanceAsync` know about Withholding?
-        // Prior to this, Balance = TotalGross.
-        // I should verify `InvoiceBalanceService`. For now, I set it here.
+        await _balanceService.RecalculateBalanceAsync(inv.Id, ct);
 
-
-        // Transaction: Invoice update + StockMovements birlikte commit
+        // Transaction
         await using var tx = await _ctx.BeginTransactionAsync(ct);
         try
         {
-            // 5) Save + concurrency
             try { await _ctx.SaveChangesAsync(ct); }
             catch (DbUpdateConcurrencyException)
             { throw new ConcurrencyConflictException(); }
 
-            // 5.5) Stok Hareketlerini Senkronize Et (Reset yöntemi)
+            // Stok hareketlerini senkronize et
             await SyncStockMovements(inv, itemsMap, ct);
 
             await tx.CommitAsync(ct);
@@ -151,7 +152,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             throw;
         }
 
-        // 6) Fresh read (AsNoTracking + Contact + Lines)
+        // Fresh read
         var fresh = await _ctx.Invoices
             .AsNoTracking()
             .Include(i => i.Branch)
@@ -159,13 +160,13 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             .Include(i => i.Lines)
             .FirstAsync(i => i.Id == inv.Id, ct);
 
-        // Lines → DTO (snapshot kullan)
+        // Lines → DTO (❌ ExpenseDefinitionId kaldırıldı)
         var linesDto = fresh.Lines
             .OrderBy(l => l.Id)
             .Select(l => new InvoiceLineDto(
                 l.Id,
                 l.ItemId,
-                l.ExpenseDefinitionId,
+                // ❌ l.ExpenseDefinitionId,  KALDIRILDI
                 l.ItemCode,
                 l.ItemName,
                 l.Unit,
@@ -183,7 +184,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             ))
             .ToList();
 
-        // 7) DTO build
+        // DTO build (🆕 DocumentType eklendi)
         return new InvoiceDetailDto(
             fresh.Id,
             fresh.ContactId,
@@ -201,6 +202,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             fresh.Balance,
             linesDto,
             (int)fresh.Type,
+            (int)fresh.DocumentType,  // 🆕 EKLENDI
             fresh.BranchId,
             fresh.Branch.Code,
             fresh.Branch.Name,
@@ -213,29 +215,31 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         );
     }
 
-    private static InvoiceType NormalizeType(string? incoming, InvoiceType fallback)
+    private void ProcessLine(
+        Invoice inv,
+        InvoiceLine line,
+        UpdateInvoiceLineDto dto,
+        Dictionary<int, dynamic> itemsMap,
+        DateTime now)
     {
-        if (string.IsNullOrWhiteSpace(incoming)) return fallback;
+        // ❌ KALDIRILDI: InvoiceType.Expense kontrolü
+        // Artık sadece ItemId var
 
-        // "1" / "2" / "3" / "4"
-        if (int.TryParse(incoming, out var n) && Enum.IsDefined(typeof(InvoiceType), n))
-            return (InvoiceType)n;
+        if (!dto.ItemId.HasValue)
+            throw new FluentValidation.ValidationException("ItemId is required for all invoice lines");
 
-        // "Sales" / "Purchase" / "SalesReturn" / "PurchaseReturn"
-        return incoming.Trim().ToLowerInvariant() switch
-        {
-            "sales" => InvoiceType.Sales,
-            "purchase" => InvoiceType.Purchase,
-            "salesreturn" => InvoiceType.SalesReturn,
-            "purchasereturn" => InvoiceType.PurchaseReturn,
-            _ => fallback
-        };
-    }
+        line.ItemId = dto.ItemId.Value;
 
-    private void ProcessLine(Invoice inv, InvoiceLine line, UpdateInvoiceLineDto dto, Dictionary<int, dynamic> itemsMap, Dictionary<int, dynamic> expensesMap, DateTime now)
-    {
+        if (!itemsMap.TryGetValue(line.ItemId.Value, out var item))
+            throw new NotFoundException("Item", line.ItemId.Value);
+
+        // Snapshot bilgileri
+        line.ItemCode = item.Code;
+        line.ItemName = item.Name;
+        line.Unit = item.Unit;
+
         decimal discountRate = dto.DiscountRate ?? 0;
-        int withholdingRate = dto.WithholdingRate ?? 0;
+        int withholdingRate = dto.WithholdingRate ?? item.DefaultWithholdingRate ?? 0;
 
         // Calculations
         var gross = DecimalExtensions.RoundQuantity(dto.Qty * dto.UnitPrice);
@@ -258,46 +262,14 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
         line.WithholdingAmount = withholdingAmount;
         line.GrandTotal = grandTotal;
         line.UpdatedAtUtc = now;
-
-        // Item/Expense Mapping
-        if (inv.Type == InvoiceType.Expense)
-        {
-            if (dto.ItemId.HasValue) throw new BusinessRuleException("Masraf faturasında ItemId olamaz.");
-            if (!dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Masraf faturasında ExpenseDefinitionId zorunludur.");
-
-            line.ExpenseDefinitionId = dto.ExpenseDefinitionId;
-            line.ItemId = null;
-
-            if (expensesMap.TryGetValue(line.ExpenseDefinitionId.Value, out var exp))
-            {
-                line.ItemCode = exp.Code;
-                line.ItemName = exp.Name;
-                line.Unit = "adet";
-            }
-        }
-        else
-        {
-            if (dto.ExpenseDefinitionId.HasValue) throw new BusinessRuleException("Stok faturasında ExpenseDefinitionId olamaz.");
-            if (!dto.ItemId.HasValue) throw new BusinessRuleException("Stok faturasında ItemId zorunludur.");
-
-            line.ItemId = dto.ItemId;
-            line.ExpenseDefinitionId = null;
-
-            if (itemsMap.TryGetValue(line.ItemId.Value, out var it))
-            {
-                line.ItemCode = it.Code;
-                line.ItemName = it.Name;
-                line.Unit = it.Unit;
-            }
-        }
     }
 
-    private async Task SyncStockMovements(Invoice invoice, Dictionary<int, dynamic> itemsMap, CancellationToken ct)
+    private async Task SyncStockMovements(
+        Invoice invoice,
+        Dictionary<int, dynamic> itemsMap,
+        CancellationToken ct)
     {
-        // 1. Stok hareketi gerekmeyen durum (Expense)
-        if (invoice.Type == InvoiceType.Expense) return;
-
-        // 2. Mevcut hareketleri bul ve sil (Reset) - InvoiceId ile
+        // Mevcut hareketleri bul ve sil (Reset)
         var existingMovements = await _ctx.StockMovements
             .Where(m => m.InvoiceId == invoice.Id && !m.IsDeleted)
             .ToListAsync(ct);
@@ -308,7 +280,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
             move.DeletedAtUtc = DateTime.UtcNow;
         }
 
-        // 3. Yeni hareketleri oluştur
+        // Hareket tipi belirle
         StockMovementType? movementType = invoice.Type switch
         {
             InvoiceType.Sales => StockMovementType.SalesOut,
@@ -320,7 +292,7 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         if (movementType == null) return;
 
-        // ✅ FIX: Branch'in varsayılan deposunu bul (hardcoded 1 yerine)
+        // Varsayılan depoyu bul
         var defaultWarehouse = await _ctx.Warehouses
             .Where(w => w.BranchId == invoice.BranchId && w.IsDefault && !w.IsDeleted)
             .Select(w => new { w.Id })
@@ -328,7 +300,6 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         if (defaultWarehouse == null)
         {
-            // Fallback: IsDefault olmasa bile şubenin ilk deposunu kullan
             defaultWarehouse = await _ctx.Warehouses
                 .Where(w => w.BranchId == invoice.BranchId && !w.IsDeleted)
                 .OrderBy(w => w.Id)
@@ -338,23 +309,24 @@ public sealed class UpdateInvoiceHandler : IRequestHandler<UpdateInvoiceCommand,
 
         if (defaultWarehouse == null)
         {
-            throw new BusinessRuleException($"Şube (BranchId: {invoice.BranchId}) için tanımlı depo bulunamadı. Stoklu ürün içeren fatura için en az bir depo tanımlamalısınız.");
+            throw new BusinessRuleException(
+                $"Şube (BranchId: {invoice.BranchId}) için tanımlı depo bulunamadı.");
         }
 
+        // Yeni hareketler oluştur
         foreach (var line in invoice.Lines)
         {
-            if (line.ItemId == null || line.IsDeleted) continue; // Deleted lines don't create movement
+            if (line.ItemId == null || line.IsDeleted) continue;
 
-            // Check ItemType - Skip if NOT Inventory
-            if (itemsMap != null && itemsMap.TryGetValue(line.ItemId.Value, out var it))
+            // Sadece Inventory tipindeki item'lar için stok hareketi
+            if (itemsMap.TryGetValue(line.ItemId.Value, out var item))
             {
-                if ((ItemType)it.type != ItemType.Inventory) continue;
+                if ((ItemType)item.type != ItemType.Inventory) continue;
             }
 
             var absQty = line.Qty;
             if (absQty == 0) continue;
 
-            // Create command
             var cmd = new Accounting.Application.StockMovements.Commands.Create.CreateStockMovementCommand(
                 WarehouseId: defaultWarehouse.Id,
                 ItemId: line.ItemId.Value,

@@ -29,7 +29,13 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
             .IsInEnum()
             .WithMessage("Geçersiz fatura türü.");
 
-        // Branch Tutarlılık Kontrolü: Contact aynı şubeye ait olmalı
+        // 🆕 DocumentType validasyonu
+        RuleFor(x => x.DocumentType)
+            .IsInEnum()
+            .When(x => x.DocumentType.HasValue)
+            .WithMessage("Geçerli bir belge türü seçiniz.");
+
+        // Branch kontrolü
         RuleFor(x => x)
             .MustAsync(ContactBelongsToSameBranchAsync)
             .WithMessage("Cari (Contact) fatura ile aynı şubeye ait olmalıdır.")
@@ -43,9 +49,11 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
 
         RuleForEach(x => x.Lines).ChildRules(line =>
         {
+            // 🆕 ItemId artık zorunlu (ExpenseDefinitionId yok)
             line.RuleFor(l => l.ItemId)
+                .NotNull()
                 .GreaterThan(0)
-                .When(l => l.ItemId.HasValue);
+                .WithMessage("ItemId gereklidir.");
 
             line.RuleFor(l => l.Qty)
                 .GreaterThan(0)
@@ -64,11 +72,11 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
                 .WithMessage("İskonto oranı 0-100 arasında olmalıdır.");
         });
 
-        // Branch Tutarlılık Kontrolü: Satırlardaki Item'lar aynı şubeye ait olmalı
+        // Item branch kontrolü
         RuleFor(x => x)
             .MustAsync(AllItemsBelongToSameBranchAsync)
             .WithMessage("Fatura satırlarındaki ürünler (Item) fatura ile aynı şubeye ait olmalıdır.")
-            .When(x => x.Lines != null && x.Lines.Any(l => l.ItemId.HasValue) && _currentUserService.BranchId.HasValue);
+            .When(x => x.Lines != null && x.Lines.Any() && _currentUserService.BranchId.HasValue);
     }
 
     private async Task<bool> ContactBelongsToSameBranchAsync(CreateInvoiceCommand cmd, CancellationToken ct)
@@ -100,7 +108,7 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
             .ToList();
 
         if (!itemIds.Any())
-            return true; // Item yoksa (ExpenseDefinition kullanılıyor olabilir)
+            return true;
 
         var mismatchedItems = await _db.Items
             .AsNoTracking()
