@@ -1,4 +1,5 @@
-﻿using Accounting.Application.Common.Interfaces;
+﻿using Accounting.Application.Common.Helpers;
+using Accounting.Application.Common.Interfaces;
 using Accounting.Application.Services;
 using Accounting.Domain.Constants;
 using Accounting.Domain.Entities;
@@ -858,7 +859,8 @@ public static class DataSeeder
                         Net = net,
                         Vat = vat,
                         Gross = gross,
-                        CreatedAtUtc = now.AddDays(-i)
+                        CreatedAtUtc = now.AddDays(-i),
+                        AccountCode = AccountCodeHelper.GetAccountCode(invType, item.Type)
                     }
                 },
                 CreatedAtUtc = now.AddDays(-i)
