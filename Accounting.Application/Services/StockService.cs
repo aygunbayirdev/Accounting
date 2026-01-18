@@ -10,31 +10,36 @@ public class StockService(IAppDbContext db) : IStockService
 {
     public async Task<List<ItemStockDto>> GetStockStatusAsync(List<int> itemIds, CancellationToken ct)
     {
-        // 1. Invoices (Giren/Çıkan)
-        // Giriş: Alış Faturaları
-        // Çıkış: Satış Faturaları
+        // 1. Invoices (Giren/Çıkan) - 🔧 SADECE INVENTORY TİPİNDEKİ ITEM'LAR
         var invoiceLines = await db.InvoiceLines
             .AsNoTracking()
-            .Where(l => l.ItemId.HasValue && itemIds.Contains(l.ItemId.Value))
+            .Include(l => l.Item)  // 🆕 EKLENDI
+            .Where(l => l.ItemId.HasValue
+                && itemIds.Contains(l.ItemId.Value)
+                && l.Item != null
+                && l.Item.Type == ItemType.Inventory)  // 🆕 KRİTİK FİLTRE
             .Select(l => new
             {
                 l.ItemId,
                 l.Invoice.Type,
-                l.Qty // InvoiceLine uses Qty (Corrected)
+                l.Qty
             })
             .ToListAsync(ct);
 
-        // 2. Orders (Rezerve)
-        // Kriter: Satış Siparişi + Onaylı (Approved)
+        // 2. Orders (Rezerve) - Zaten sadece stoklu ürünler sipariş edilir
         var reservedLines = await db.OrderLines
             .AsNoTracking()
-            .Where(l => l.ItemId.HasValue && itemIds.Contains(l.ItemId.Value) &&
-                        l.Order.Type == InvoiceType.Sales &&
-                        l.Order.Status == OrderStatus.Approved)
+            .Include(l => l.Item)  // 🆕 EKLENDI
+            .Where(l => l.ItemId.HasValue
+                && itemIds.Contains(l.ItemId.Value)
+                && l.Order.Type == InvoiceType.Sales
+                && l.Order.Status == OrderStatus.Approved
+                && l.Item != null
+                && l.Item.Type == ItemType.Inventory)  // 🆕 EKLENDI
             .Select(l => new
             {
                 l.ItemId,
-                l.Quantity // OrderLine uses Quantity
+                l.Quantity
             })
             .ToListAsync(ct);
 
@@ -46,7 +51,6 @@ public class StockService(IAppDbContext db) : IStockService
             var outs = invoiceLines.Where(x => x.ItemId == itemId && x.Type == InvoiceType.Sales).Sum(x => x.Qty);
             var reserved = reservedLines.Where(x => x.ItemId == itemId).Sum(x => x.Quantity);
 
-            // Available = (In - Out) - Reserved
             var available = (ins - outs) - reserved;
 
             result.Add(new ItemStockDto(itemId, ins, outs, reserved, available));
@@ -63,14 +67,26 @@ public class StockService(IAppDbContext db) : IStockService
 
     public async Task ValidateStockAvailabilityAsync(int itemId, decimal quantityRequired, CancellationToken ct)
     {
-        // Hizmet türündeki itemlar stok takibine girmez (Varsayım: Şimdilik tüm Itemlar stoklu kabul ediliyor veya Item entity'sinde type kontrolü yapılmalı)
-        // MVP kapsamında her şey stoklu ürün gibi davranıyor, ileride 'Service' flag'i eklenirse buraya 'if (item.IsService) return;' eklenir.
+        // 🆕 Item tipini kontrol et - Sadece Inventory için stok kontrolü yap
+        var item = await db.Items
+            .AsNoTracking()
+            .Where(i => i.Id == itemId && !i.IsDeleted)
+            .Select(i => new { i.Type })
+            .FirstOrDefaultAsync(ct);
+
+        if (item == null)
+            throw new NotFoundException("Item", itemId);
+
+        // Service, Expense, FixedAsset için stok kontrolü yapma
+        if (item.Type != ItemType.Inventory)
+            return;
 
         var stock = await GetItemStockAsync(itemId, ct);
 
         if (stock.QuantityAvailable < quantityRequired)
         {
-            throw new BusinessRuleException($"Stok yetersiz! İstenen: {quantityRequired}, Mevcut (Rezerve Dahil): {stock.QuantityAvailable}, Ürün ID: {itemId}");
+            throw new BusinessRuleException(
+                $"Stok yetersiz! İstenen: {quantityRequired}, Mevcut: {stock.QuantityAvailable}, Ürün ID: {itemId}");
         }
     }
 
@@ -80,15 +96,34 @@ public class StockService(IAppDbContext db) : IStockService
             return;
 
         var itemIds = stockRequirements.Keys.ToList();
-        var stocks = await GetStockStatusAsync(itemIds, ct);
+
+        // 🆕 Önce Item tiplerini kontrol et
+        var items = await db.Items
+            .AsNoTracking()
+            .Where(i => itemIds.Contains(i.Id) && !i.IsDeleted)
+            .Select(i => new { i.Id, i.Type })
+            .ToListAsync(ct);
+
+        // Sadece Inventory tipindeki item'ları filtrele
+        var inventoryItemIds = items
+            .Where(i => i.Type == ItemType.Inventory)
+            .Select(i => i.Id)
+            .ToList();
+
+        if (!inventoryItemIds.Any())
+            return;  // Hiç Inventory item yok, stok kontrolü gereksiz
+
+        var stocks = await GetStockStatusAsync(inventoryItemIds, ct);
 
         var insufficientItems = new List<string>();
 
         foreach (var stock in stocks)
         {
-            if (stockRequirements.TryGetValue(stock.ItemId, out var required) && stock.QuantityAvailable < required)
+            if (stockRequirements.TryGetValue(stock.ItemId, out var required)
+                && stock.QuantityAvailable < required)
             {
-                insufficientItems.Add($"Ürün ID: {stock.ItemId}, İstenen: {required}, Mevcut: {stock.QuantityAvailable}");
+                insufficientItems.Add(
+                    $"Ürün ID: {stock.ItemId}, İstenen: {required}, Mevcut: {stock.QuantityAvailable}");
             }
         }
 

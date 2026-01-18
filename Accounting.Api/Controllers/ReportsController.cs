@@ -1,5 +1,4 @@
 using Accounting.Application.Common.Abstractions;
-using Accounting.Application.Reports.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,8 +7,8 @@ using Accounting.Domain.Constants;
 using Accounting.Application.Reports.Queries.GetContactStatement;
 using Accounting.Application.Reports.Queries.Dtos;
 using Accounting.Application.Reports.Queries.GetStockStatus;
-using Accounting.Application.Reports.Queries.GetProfitLoss;
 using Accounting.Application.Reports.Queries.GetDashboardStats;
+using Accounting.Application.Reports.Queries.GetIncomeExpense;
 
 namespace Accounting.Api.Controllers;
 
@@ -66,14 +65,14 @@ public class ReportsController(IMediator mediator, IExcelService excelService) :
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Ekstre_{safeName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx");
     }
 
-    [HttpGet("profit-loss")]
+    [HttpGet("income-expense")]
     [Authorize(Policy = Permissions.Report.ProfitLoss)]
-    public async Task<ActionResult<ProfitLossDto>> GetProfitLoss(
+    public async Task<ActionResult<IncomeExpenseDto>> GetProfitLoss(
         [FromQuery] int? branchId,
         [FromQuery] DateTime? dateFrom,
         [FromQuery] DateTime? dateTo,
         CancellationToken ct)
     {
-        return Ok(await mediator.Send(new GetProfitLossQuery(branchId, dateFrom, dateTo), ct));
+        return Ok(await mediator.Send(new GetIncomeExpenseQuery(branchId, dateFrom, dateTo), ct));
     }
 }

@@ -41,47 +41,9 @@ Projede transaction yönetimi **açık ve görünür** olması için handler'lar
 | Durum | Örnek | Gerekli mi? |
 |-------|-------|-------------|
 | **2+ SaveChangesAsync çağrısı** | Payment → InvoiceBalance güncelleme | ✅ EVET |
-| **MediatR ile nested command** | PostToBill → CreateInvoice + CreatePayment | ✅ EVET |
+| **MediatR ile nested command** | CreateInvoice + StockMovement | ✅ EVET |
 | **Tek SaveChangesAsync** | CreateContact, UpdateOrder | ❌ HAYIR |
 | **Parent + Child entity (aynı aggregate)** | Order + OrderLines | ❌ HAYIR |
-
-### Ne Zaman Gerekli DEĞİL?
-
-EF Core, tek `SaveChangesAsync()` çağrısını zaten **atomic** olarak çalıştırır:
-
-```csharp
-// Bu zaten atomic - Transaction GEREKMEZ
-db.Orders.Add(order);
-order.Lines.Add(line1);
-order.Lines.Add(line2);
-await db.SaveChangesAsync(); // Tek çağrı = otomatik transaction
-```
-
-### Manuel Transaction Pattern
-
-```csharp
-public async Task Handle(CreatePaymentCommand req, CancellationToken ct)
-{
-    // ... validation ve entity hazırlama ...
-
-    await using var tx = await _db.BeginTransactionAsync(ct);
-    try
-    {
-        _db.Payments.Add(payment);
-        await _db.SaveChangesAsync(ct);
-
-        await _balanceService.RecalculateBalanceAsync(invoiceId, ct);
-        await _db.SaveChangesAsync(ct);
-
-        await tx.CommitAsync(ct);
-    }
-    catch
-    {
-        await tx.RollbackAsync(ct);
-        throw;
-    }
-}
-```
 
 ### Transaction Kullanan Handler'lar
 
@@ -92,7 +54,6 @@ public async Task Handle(CreatePaymentCommand req, CancellationToken ct)
 | `SoftDeletePaymentHandler` | 2x SaveChanges |
 | `CreateInvoiceHandler` | MediatR.Send (StockMovement) |
 | `UpdateInvoiceHandler` | 2x SaveChanges + MediatR.Send |
-| `PostExpenseListToBillHandler` | MediatR.Send (Invoice + Payment) |
 
 ---
 
@@ -103,33 +64,15 @@ public async Task Handle(CreatePaymentCommand req, CancellationToken ct)
 - **Şifre Hashleme**: `IPasswordHasher` (Identity.Core)
 - **Özel** User/Role entity'leri (ASP.NET Identity framework kullanılmıyor)
 
-### Token Claims
-```csharp
-{
-  "id": "5",
-  "email": "user@example.com",
-  "permission": ["InvoiceCreate", "PaymentView"],
-  "role": "Admin",              // Rol bazlı yetkilendirme
-  "branchId": "2",              // Şube ataması
-  "isHeadquarters": "true"      // Merkez flag
-}
-```
-
 ### Yetkilendirme Stratejileri
 
 #### 1. **Rol Bazlı** (Yönetim İşlemleri)
 ```csharp
 [Authorize(Roles = "Admin")]  // Kullanıcı/Rol yönetimi
-public class UsersController : ControllerBase
 ```
 
-#### 2. **İzin Bazlı** (İş Operasyonları)
-```csharp
-[RequirePermission("InvoiceCreate")]  // Gelecek: Granular kontrol
-```
-
-#### 3. **Şube Bazlı** (Veri İzolasyonu)
-Tüm sorgular otomatik olarak şubeye göre filtrelenir (Multi-Branch bölümüne bakınız)
+#### 2. **Şube Bazlı** (Veri İzolasyonu)
+Tüm sorgular otomatik olarak şubeye göre filtrelenir.
 
 ---
 
@@ -142,36 +85,16 @@ Tüm sorgular otomatik olarak şubeye göre filtrelenir (Multi-Branch bölümün
 
 ### Uygulama
 
-#### DRY Extension Method
 ```csharp
 var invoices = await _db.Invoices
     .ApplyBranchFilter(_currentUserService)  // 👈 Tek satır!
     .ToListAsync();
 ```
 
-#### Ne Yapar?
-```csharp
-public static IQueryable<T> ApplyBranchFilter<T>(
-    this IQueryable<T> query, 
-    ICurrentUserService currentUserService) where T : IHasBranch
-{
-    if (currentUserService.IsAdmin) return query;
-    if (currentUserService.IsHeadquarters) return query;
-    if (currentUserService.BranchId.HasValue)
-        return query.Where(e => e.BranchId == currentUserService.BranchId.Value);
-    return query.Where(e => false); // Şube yok = veri yok
-}
-```
+### Güvenli Hale Getirilen Entity'ler
+**List:** Invoices, Items, Contacts, Payments, CashBankAccounts, Stocks, Warehouses, StockMovements
 
-### Güvenlik Garantisi
-- ✅ **List handler'lar**: Otomatik filtreleme
-- ✅ **GetById handler'lar**: Çapraz şube ID erişimini engeller
-- ✅ **`IHasBranch` entity'ler**: Invoice, Payment, Item, Contact, Stock, Warehouse, vb.
-
-### Güvenli Hale Getirilen Entity'ler (18 handler)
-**List:** Invoices, Items, Contacts, Payments, ExpenseLists, FixedAssets, CashBankAccounts, Stocks, Warehouses, StockMovements
-
-**GetById:** Invoices, Items, Contacts, Payments, FixedAssets, CashBankAccounts, ExpenseLists, Warehouses
+**GetById:** Invoices, Items, Contacts, Payments, CashBankAccounts, Warehouses
 
 ---
 
@@ -192,94 +115,227 @@ public static IQueryable<T> ApplyBranchFilter<T>(
   - Cari kart en az bir detay (Şahıs veya Şirket) içermelidir.
   - Perakende (`IsRetail`) ve Kurumsal (`IsCustomer`) aynı anda olamaz.
 
-### 2. **Items (Ürün/Hizmetler)**
-- **Stok ve Hizmet Yönetimi**:
-  - `Inventory` (Stoklu Ürün): Stok takibi yapılır, depoya girer/çıkar.
-  - `Service` (Hizmet): Stok takibi yapılmaz, sadece faturalanır (Danışmanlık, İşçilik vb.).
-- **Özellikler**: CRUD, kod/isim validasyonu, KDV oranı tanımı.
+### 2. **Invoices (Faturalar)** ✨ GÜNCELLENDİ
 
-### 3. **Invoices (Faturalar) - KOBİ Standardı**
-- **Tipler**: 
-  - `Sales` (Satış): Müşteriye kesilen, stoktan düşen (ItemType=Inventory ise).
-  - `Purchase` (Alış): Tedarikçiden alınan, stoka giren.
-  - `SalesReturn` (Satış İade): Stok geri girer.
-  - `PurchaseReturn` (Alış İade): Stok geri çıkar.
-- **Kapsamlı Hesaplama**:
-  - **Matrah (Net)**: `(Miktar * Fiyat) - İskonto`
-  - **İskonto (Discount)**: Satır bazında oran (%) veya tutar.
-  - **KDV (VAT)**: Matrah üzerinden hesaplanan vergi.
-  - **Tevkifat (Withholding)**: KDV'nin belli oranının (örn. 5/10) alıcı tarafından ödenmesi.
-  - **Genel Toplam (Grand Total)**: `Fatura Toplamı - Tevkifat`.
-- **Ek Özellikler**: 
-  - **İrsaliye Takibi**: İrsaliye No ve Tarihi (`WaybillNumber`, `WaybillDateUtc`).
-  - **Vade Takibi**: Ödeme Vade Tarihi (`PaymentDueDateUtc`).
-  - **Dövizli Fatura**: Kur (`CurrencyRate`) ve Döviz Cinsi takibi.
+#### Invoice Types (`InvoiceType` Enum):
+- **Sales (1)**: Satış faturası
+- **Purchase (2)**: Alış faturası
+- **SalesReturn (3)**: Satış iadesi
+- **PurchaseReturn (4)**: Alış iadesi
+- ~~**Expense (5)**~~: **KALDIRILDI** → Artık `Purchase` + `Item.Type=Expense` kullanılıyor
 
-#### Tevkifat (Withholding) Detayları
-KDV'nin bir kısmının alıcı tarafından kesilip doğrudan vergi dairesine ödenmesidir.
+#### Document Types (`DocumentType` Enum): 🆕 YENİ
+- **Invoice (1)**: Standart fatura
+- **RetailReceipt (2)**: Perakende satış fişi
+- **ExpenseNote (3)**: Masraf belgesi (eski ExpenseList yerine)
 
-**1. Kapsam (Scope)**
-- **Satır Bazlıdır**: Bir faturada hem tevkifatlı (örn. İşçilik) hem tevkifatsız (örn. Malzeme) kalemler aynı anda bulunabilir. Sistem her satırı ayrı hesaplar.
-- **Hem Hizmet Hem Stok**: Genellikle hizmet sektöründe (Temizlik, Nakliye) yaygın olsa da, bazı stoklu ürünlerde (Hurda, Bakır, Sunta vb.) de tevkifat zorunluluğu vardır. Sistemimizde `Inventory` veya `Service` fark etmeksizin her kaleme tevkifat uygulanabilir.
+#### Kapsamlı Hesaplama:
+- **Matrah (Net)**: `(Miktar * Fiyat) - İskonto`
+- **İskonto (Discount)**: Satır bazında oran (%) veya tutar
+- **KDV (VAT)**: Matrah üzerinden hesaplanan vergi
+- **Tevkifat (Withholding)**: KDV'nin belli oranının (örn. 5/10) alıcı tarafından ödenmesi
+- **Genel Toplam (Grand Total)**: `Fatura Toplamı - Tevkifat`
 
-**2. Hesaplama Mantığı (Logic)**
-Bu sistemde hesaplama şu formülle yapılır:
-> **Alacağınız Para (Balance) = (Matrah + KDV) - Tevkifat Tutarı**
+#### Masraf/Demirbaş Girişi (Yeni Workflow):
+```csharp
+// Eskiden: ExpenseList oluştur → Post to Bill
+// Şimdi: Purchase Invoice + Expense/FixedAsset tipli Item
 
-_Örnek Senaryo: 1000 TL + %20 KDV (%5/10 Tevkifat)_
-- **Matrah (Net)**: 1.000 TL
-- **Hesaplanan KDV (%20)**: 200 TL
-- **Uygulanan Tevkifat (5/10)**: 100 TL _(Bu tutarı alıcı sizin adınıza devlete öder)_
-- **Fatura Brüt Toplamı**: 1.200 TL
-- **Cari Hesaba İşleyen (Tahsil Edilecek)**: **1.100 TL** (1200 - 100)
+// Elektrik faturası girişi
+POST /api/invoices {
+  Type: InvoiceType.Purchase,
+  DocumentType: DocumentType.RetailReceipt,
+  Lines: [
+    { ItemId: 15, Qty: 1, UnitPrice: 850 }  // Item.Type = Expense
+  ]
+}
 
-> *Sistemde tevkifat oranını (Rate) girdiğinizde (örn: 50), Tutar (Amount) ve Cari Bakiye (Balance) otomatik hesaplanır.*
+// Demirbaş alımı
+POST /api/invoices {
+  Type: InvoiceType.Purchase,
+  DocumentType: DocumentType.Invoice,
+  Lines: [
+    { ItemId: 20, Qty: 1, UnitPrice: 25000 }  // Item.Type = FixedAsset
+  ]
+}
+```
+
+### 3. **Items (Stok Kartları)** ✨ GÜNCELLENDİ
+
+**Unified Item Model**: Tüm ürün, hizmet, masraf ve demirbaşlar tek bir Item entity'sinde yönetilir.
+
+#### Item Tipleri (`ItemType` Enum):
+
+##### **Inventory (1)**: Stoklu ürünler
+- Fiziksel mal - stok takibi yapılır
+- **Örnek**: Laptop, Telefon, Çay, Kahve
+- **Özellikler**: Alış/Satış fiyatı, Stok hareketi, Depo bazlı takip
+- **Stok Hareketi**: ✅ Oluşturulur (StockMovement)
+
+##### **Service (2)**: Hizmetler  
+- Stok takibi yapılmaz
+- **Örnek**: Teknik destek, Danışmanlık, Kargo hizmeti
+- **Özellikler**: Sadece satış fiyatı, Zamana dayalı (saat/gün)
+- **Stok Hareketi**: ❌ Oluşturulmaz
+
+##### **Expense (3)**: Masraf kalemleri
+- Stok takibi yapılmaz
+- **Örnek**: Elektrik, Su, Kira, İnternet
+- **Özellikler**: Sadece gider kaydı, Purchase invoice ile girilir
+- **Eski Sistem**: ExpenseDefinition + ExpenseList → **KALDIRILDI**
+- **Stok Hareketi**: ❌ Oluşturulmaz
+
+##### **FixedAsset (4)**: Demirbaşlar
+- Stok takibi yapılmaz
+- **Örnek**: Bilgisayar, Masa, Sandalye, Yazıcı
+- **Özellikler**: Faydalı ömür (UsefulLifeYears), Sadece Purchase invoice ile girilir
+- **Eski Sistem**: FixedAsset entity → **KALDIRILDI**
+- **Stok Hareketi**: ❌ Oluşturulmaz
+
+#### Yeni Alanlar:
+- `PurchaseAccountCode`: Muhasebe alış hesap kodu (örn: "153" - Ticari Mallar)
+- `SalesAccountCode`: Muhasebe satış hesap kodu (örn: "600" - Yurt İçi Satışlar)
+- `UsefulLifeYears`: Demirbaş faydalı ömrü (sadece FixedAsset için)
+
+#### Örnek Kullanım:
+```csharp
+// Laptop (Inventory)
+new Item { 
+  Type = ItemType.Inventory, 
+  Code = "LAP001", 
+  PurchasePrice = 12000, 
+  SalesPrice = 15000,
+  PurchaseAccountCode = "153",
+  SalesAccountCode = "600"
+}
+
+// Kargo (Service)
+new Item { 
+  Type = ItemType.Service, 
+  Code = "SRV001", 
+  SalesPrice = 50, 
+  SalesAccountCode = "602"
+}
+
+// Elektrik Gideri (Expense)
+new Item { 
+  Type = ItemType.Expense, 
+  Code = "EXP001", 
+  PurchaseAccountCode = "770"
+}
+
+// Demirbaş Laptop (FixedAsset)
+new Item { 
+  Type = ItemType.FixedAsset, 
+  Code = "FA001", 
+  PurchasePrice = 25000, 
+  UsefulLifeYears = 5,
+  PurchaseAccountCode = "255"
+}
+```
 
 ### 4. **Payments (Tahsilat/Tediye)**
 - **Yönler**: In (Tahsilat), Out (Ödeme)
 - **İlişkiler**: CashBankAccount, Contact, Invoice
 - **Özellikler**: Multi-currency, date range filtering
 
-### 5. **Expense Lists (Masraf Listeleri)**
-- **Workflow**: Draft → Reviewed → Posted
-- **Post to Bill**: Masraf listesini satın alma faturasına çevirir
-- **Özellikler**: Line-based editing, approval system
-
-### 6. **Stock Management (Stok Yönetimi)**
+### 5. **Stock Management (Stok Yönetimi)**
 - **Warehouse**: Depo tanımları
 - **Stock**: Anlık stok miktarları (Warehouse + Item bazında)
 - **StockMovement**: Stok hareketleri
-  - **Tipler**: PurchaseIn, SalesOut, AdjustmentIn, AdjustmentOut
+  - **Tipler**: PurchaseIn, SalesOut, SalesReturn, PurchaseReturn, AdjustmentIn, AdjustmentOut
 
-### 7. **Cash/Bank Accounts (Kasa/Banka)**
+**⚠️ Önemli**: Sadece `ItemType.Inventory` tipindeki item'lar için stok hareketi oluşturulur!
+
+### 6. **Cash/Bank Accounts (Kasa/Banka)**
 - **Tipler**: Cash, Bank
 - Tahsilat/tediye hesapları
 
-### 8. **Fixed Assets (Demirbaşlar)**
-- Sabit kıymet yönetimi (MVP'de henüz aktif değil)
-
-### 9. **Cheques & Promissory Notes (Çek/Senet)**
+### 7. **Cheques & Promissory Notes (Çek/Senet)**
 - **Tipler**: Cheque (Çek), PromissoryNote (Senet)
 - **Yönler**: Inbound (Müşteriden alınan), Outbound (Tedarikçiye verilen)
 - **Durumlar**: Pending, Paid, Bounced (Karşılıksız), Endorsed (Ciro)
-- **Özellikler**: vade takibi, tahsilat/ödeme entegrasyonu.
 
-### 10. **Identity & Access Management (IAM)**
-- **Users**: Kullanıcı yönetimi, şifre hashleme, rol atama.
-- **Roles**: Dinamik rol ve izin (Permission) yönetimi.
-- **Güvenlik**: JWT tabanlı, Branch-scoped erişim kontrolü.
+### 8. **Reports (Raporlar)** ✨ GÜNCELLENDİ
+
+#### Gelir-Gider Raporu (Income & Expense Report)
+
+⚠️ **ÖNEMLİ UYARI**: Bu rapor **NAKİT BAZLI** bir gelir-gider tablosudur.
+
+**Ne Değildir:**
+- ❌ Kâr-Zarar Tablosu (Profit & Loss Statement) DEĞİLDİR
+- ❌ Tahakkuk esası muhasebe raporu DEĞİLDİR
+- ❌ COGS (Satılan Malın Maliyeti) içermez
+- ❌ Resmi vergi beyannamesi için KULLANILAMAZ
+
+**Ne İçerir:**
+- ✅ Dönem içi satış gelirleri (Sales - Sales Returns)
+- ✅ Dönem içi stok alımları (Inventory Purchases - Returns)
+- ✅ Dönem içi faaliyet giderleri (Expense + Service alımları - Returns)
+- ✅ Nakit bazlı fazla/açık
+- ✅ KDV dengesi
+
+**Hesaplama Mantığı:**
+```
+Gelir = Satışlar - Satış İadeleri
+Stok Alımları = Inventory Alımları - Alım İadeleri
+Faaliyet Giderleri = Expense Alımları + Service Alımları - İadeler
+Nakit Fazlası = Gelir - Stok Alımları - Faaliyet Giderleri
+```
+
+**Neden COGS Değil?**
+- Gerçek COGS için stok envanteri gerekir (Dönem Başı + Alımlar - Dönem Sonu)
+- FIFO/LIFO gibi maliyet yöntemleri gerekir
+- Bu rapor sadece "ne kadar mal aldık" gösterir, "satılanın maliyeti" değil
+
+**Kimler İçin Uygundur:**
+- ✅ KOBİ nakit akışı takibi
+- ✅ Günlük/aylık gelir-gider kontrolü
+- ✅ Basit finansal durum özeti
+- ❌ Resmi mali tablolar için değil
+
+**API Endpoint:**
+```
+GET /api/reports/income-expense?dateFrom=2026-01-01&dateTo=2026-01-31&branchId=1
+```
+
+**Response Örneği:**
+```json
+{
+  "grossSales": 100000,
+  "salesReturns": 10000,
+  "netIncome": 90000,
+  "inventoryPurchases": 60000,
+  "inventoryReturns": 5000,
+  "netInventoryPurchases": 55000,
+  "operatingExpenses": 12000,
+  "totalExpenses": 67000,
+  "cashSurplus": 23000,
+  "vatBalance": 6000
+}
+```
+
+**Gelecek Geliştirmeler:**
+Gerçek Kâr-Zarar Tablosu için:
+1. Stok envanter modülü ekle (Dönem Başı/Sonu sayımı)
+2. Her satış satırına maliyet alanı ekle (FIFO/LIFO)
+3. Tahakkuk esası muhasebe entegrasyonu
+
+### 9. **Identity & Access Management (IAM)**
+- **Users**: Kullanıcı yönetimi, şifre hashleme, rol atama
+- **Roles**: Dinamik rol ve izin (Permission) yönetimi
+- **Güvenlik**: JWT tabanlı, Branch-scoped erişim kontrolü
 
 #### Varsayılan Roller (DataSeeder)
-Sistem **KOBİ** standartlarına uygun, otomatik oluşturulan hazır rollerle gelir:
 
-| Rol | Açıklama | Tipik Yetkiler | Örnek Kullanıcı (Şifre: ...123!) |
-|-----|----------|----------------|-----------------|
-| **Admin** | Sistem Yöneticisi | Sistemin **TAMAMINA** tam erişim. | `admin@demo.local` |
-| **Patron** | İşletme Sahibi | Tüm raporları ve kayıtları **görür ve onaylar**. Sistem ayarlarına dokunmaz. | `patron@demo.local` |
-| **MuhasebeSefi** | Mali Müşavir / Müdür | Tam finansal yetki (Fatura, Çek, Banka, Silme, İade). | `sef@demo.local` |
-| **OnMuhasebe** | Muhasebe Elemanı | Günlük veri girişi (Fatura, Cari, Sipariş). **Kayıt SİLEMEZ.** Kâr/Zarar görmez. | `muhasebe@demo.local` |
-| **DepoSorumlusu** | Depo Amiri | Sadece Stok, İrsaliye, Depo ve Ürünleri görür. Finansal verileri **GÖRMEZ**. | `depo@demo.local` |
-| **SatisTemsilcisi** | Plasiyer | Sipariş alır, Cari kart açar. Fatura kesme veya Tahsilat yetkisi kısıtlıdır. | `satis@demo.local` |
+| Rol | Açıklama | Örnek Kullanıcı (Şifre: ...123!) |
+|-----|----------|-----------------|
+| **Admin** | Sistem Yöneticisi | `admin@demo.local` |
+| **Patron** | İşletme Sahibi | `patron@demo.local` |
+| **MuhasebeSefi** | Mali Müşavir / Müdür | `sef@demo.local` |
+| **OnMuhasebe** | Muhasebe Elemanı | `muhasebe@demo.local` |
+| **DepoSorumlusu** | Depo Amiri | `depo@demo.local` |
+| **SatisTemsilcisi** | Plasiyer | `satis@demo.local` |
 
 ---
 
@@ -292,114 +348,56 @@ Her entity `RowVersion` (byte[]) içerir. Güncelleme/silme işlemlerinde concur
 2. **PUT** `/api/invoices/5` → Body'de `rowVersion` gönder
 3. Başka biri aynı kaydı değiştirdiyse → **409 Conflict**
 
-### Handler Pattern
-```csharp
-// 1. Fetch with tracking
-var entity = await _db.Entities.FirstOrDefaultAsync(x => x.Id == id);
-
-// 2. Set OriginalValue
-var originalBytes = Convert.FromBase64String(req.RowVersion);
-_db.Entry(entity).Property(nameof(Entity.RowVersion)).OriginalValue = originalBytes;
-
-// 3. Update properties
-entity.Name = req.Name;
-entity.UpdatedAtUtc = DateTime.UtcNow;
-
-// 4. Save with concurrency check
-try {
-    await _db.SaveChangesAsync();
-} catch (DbUpdateConcurrencyException) {
-    throw new ConcurrencyConflictException("Record was modified by another user.");
-}
-```
-
 ---
 
 ## 💰 Money & Decimal Policy
 
-### Neden Decimal?
-IEEE-754 double'da yuvarlama hataları var. Para hesaplamalarında `decimal` zorunlu.
-
 ### Kurallar
 - **Veritabanı**: `decimal(18,2)` veya `decimal(18,3)` (stok için)
 - **DTO**: String olarak (`"1500.00"`)
-- **Parsing**: `Money.TryParse2()` veya `Money.TryParse3()`
-- **Formatting**: `Money.S2()` veya `Money.S3()`
 - **Yuvarlama**: `MidpointRounding.AwayFromZero`
 
-### Örnek
-```json
-{
-  "amount": "1500.00",
-  "currency": "TRY",
-  "vatAmount": "270.00",
-  "grossAmount": "1770.00"
-}
-```
+---
 
-**Frontend**: Hesaplamalar backend'de yapılır, frontend sadece gösterir.
+## 📊 Veritabanı Şeması
+
+### Ana Tablolar
+
+| Tablo | Açıklama | Özel Alanlar |
+|-------|----------|--------------|
+| `Items` | **Birleşik Stok Kartı** (Ürün/Hizmet/Masraf/Demirbaş) | `Type`, `PurchaseAccountCode`, `SalesAccountCode`, `UsefulLifeYears` |
+| `Invoices` | Faturalar (Sales/Purchase + İadeler) | `Type`, `DocumentType` 🆕, `InvoiceNumber`, `Balance` |
+| `InvoiceLines` | Fatura Satırları | `ItemId` (ExpenseDefinitionId kaldırıldı ❌) |
+| `Contacts` | Cariler (Müşteri/Tedarikçi/Personel) | `IsCustomer`, `IsVendor`, `IsEmployee`, `IsRetail` |
+| `Payments` | Tahsilat/Tediye | `Direction`, `InvoiceId`, `CashBankAccountId` |
+| `Stocks` | Anlık Stok | `WarehouseId`, `ItemId`, `Quantity` |
+| `StockMovements` | Stok Hareketleri | `Type`, `InvoiceId`, `WarehouseId` |
+| `CashBankAccounts` | Kasa/Banka Hesapları | `Type`, `Currency`, `Balance` |
+| `Cheques` | Çek/Senet | `Type`, `Direction`, `Status`, `DueDate` |
+| `Warehouses` | Depolar | `IsDefault`, `BranchId` |
+| `Branches` | Şubeler | `IsHeadquarters` |
+| `Users` | Kullanıcılar | `BranchId`, `Roles` |
 
 ---
 
-## 📋 Expense Workflow
+## 🔌 API Endpoints
 
+### Items
 ```
-Draft → Reviewed → Posted
-  │         │         │
-  └─ Edit   └─ Lock   └─ Invoice Created
-```
-
-### Adımlar
-1. **Draft**: Masraf listesi oluştur, satırlar ekle
-2. **Review**: Onay → artık düzenlenemez
-3. **Post to Bill**: Satın alma faturasına çevir
-   - CreatePayment=true → Otomatik ödeme kaydı
-
-### Endpoint Örneği
-```bash
-POST /api/expense-lists/5/post-to-bill
-{
-  "expenseListId": 5,
-  "supplierId": 10,
-  "itemId": 3,
-  "currency": "TRY",
-  "createPayment": true,
-  "paymentAccountId": 2
-}
+GET    /api/items                 # List (with Type filter support)
+GET    /api/items/{id}            # GetById
+POST   /api/items                 # Create
+PUT    /api/items/{id}            # Update
+DELETE /api/items/{id}            # Soft Delete
 ```
 
----
-
-## 📊 Stock Management Workflow
-
-### Initial Setup
-1. **Warehouse oluştur**: `POST /api/warehouses`
-2. **Item tanımla**: `POST /api/items`
-
-### Stock Hareketleri
-```bash
-# Alış (stok girişi)
-POST /api/stock-movements
-{
-  "branchId": 1,
-  "warehouseId": 1,
-  "itemId": 5,
-  "type": "PurchaseIn",
-  "quantity": "100.000",
-  "transactionDateUtc": "2025-01-04T10:00:00Z"
-}
-
-# Satış (stok çıkışı)
-POST /api/stock-movements
-{
-  "type": "SalesOut",
-  "quantity": "10.000"
-}
+### Invoices
 ```
-
-### Stok Sorgulama
-```bash
-GET /api/stocks?warehouseId=1&itemId=5
+GET    /api/invoices              # List
+GET    /api/invoices/{id}         # GetById
+POST   /api/invoices              # Create (with DocumentType)
+PUT    /api/invoices/{id}         # Update
+DELETE /api/invoices/{id}         # Soft Delete
 ```
 
 **Constraint**: Stok negatif olamaz (DB check constraint)
@@ -512,11 +510,28 @@ Bu Türkiye'deki KOBİ'lerin en yaygın kullanım şeklidir.
   "pageSize": 20
 }
 ```
+├── Controllers/
+│   ├── InvoicesController.cs      ✅ DocumentType desteği
+│   ├── ItemsController.cs         ✅ Type bazlı filtreleme
+│   ├── ReportsController.cs       ✅ GetIncomeExpense
+│   ├── ContactsController.cs
+│   ├── PaymentsController.cs
+│   └── ...
+```
 
 ### Sorting
 ```
 ?sort=createdAtUtc:desc
 ?sort=name:asc
+│   ├── Commands/Update/
+│   └── Queries/
+├── Items/
+│   ├── Commands/Create/           ✅ Type validasyonu
+│   ├── Commands/Update/
+│   └── Queries/
+├── Reports/
+│   └── Queries/GetIncomeExpense/  ✅ Yeni (eski: GetProfitLoss)
+└── ...
 ```
 
 ### Date Format
@@ -529,147 +544,62 @@ Bu Türkiye'deki KOBİ'lerin en yaygın kullanım şeklidir.
 
 ---
 
-## 🗄️ Database Schema
+## 📋 Enums (Domain/Enums)
 
-### Key Tables
-| Table | Description | Key Columns |
-|-------|-------------|-------------|
-| `Contacts` | Müşteri/Tedarikçi/Personel | `Type`, `TaxNumber` |
-| `Items` | Ürün/Hizmet | `Code`, `Name`, `UnitPrice` |
-| `Invoices` | Faturalar | `Type`, `ContactId`, `TotalGross`, `Balance` |
-| `InvoiceLines` | Fatura Kalemleri | `InvoiceId`, `ItemId`, `Qty`, `UnitPrice` |
-| `Payments` | Tahsilat/Tediye | `Direction`, `AccountId`, `LinkedInvoiceId` |
-| `ExpenseLists` | Masraf Listeleri | `Status`, `PostedInvoiceId` |
-| `ExpenseLines` | Masraf Satırları | `ExpenseListId`, `Amount`, `VatRate` |
-| `Warehouses` | Depolar | `BranchId`, `Code`, `IsDefault` |
-| `Stocks` | Anlık Stok | `WarehouseId`, `ItemId`, `Quantity` |
-| `StockMovements` | Stok Hareketleri | `Type`, `Quantity`, `TransactionDateUtc` |
+- **ItemType** 🆕: Inventory(1), Service(2), Expense(3), FixedAsset(4)
+- **InvoiceType**: Sales(1), Purchase(2), SalesReturn(3), PurchaseReturn(4)
+- **DocumentType** 🆕: Invoice(1), RetailReceipt(2), ExpenseNote(3)
+- **StockMovementType**: PurchaseIn, SalesOut, SalesReturn, PurchaseReturn, AdjustmentIn, AdjustmentOut
+- **PaymentMethod**: Cash, CreditCard, BankTransfer, Cheque, PromissoryNote
+- **OrderStatus**: Draft, Confirmed, Processing, Shipped, Completed, Cancelled
+- **ContactType**: Customer, Vendor, Employee, Retail
+- **ChequeStatus**: Pending, Paid, Bounced, Endorsed
 
-### Indexes
-```sql
--- Performance için önerilen indexler
-CREATE INDEX IX_Invoices_DateUtc_ContactId ON Invoices(DateUtc, ContactId);
-CREATE INDEX IX_Payments_DateUtc_AccountId ON Payments(DateUtc, AccountId);
-CREATE INDEX IX_Stocks_WarehouseId_ItemId ON Stocks(WarehouseId, ItemId);
-CREATE UNIQUE INDEX UX_Stocks_Branch_Warehouse_Item ON Stocks(BranchId, WarehouseId, ItemId) WHERE IsDeleted = 0;
+---
+
+## 🎯 Migration Bilgisi
+
+### Son Migration: `ConsolidateExpensesAndFixedAssetsIntoItems`
+
+**Yapılan İşlemler:**
+1. ❌ ExpenseDefinitions tablosu DROP
+2. ❌ ExpenseLists tablosu DROP
+3. ❌ ExpenseLines tablosu DROP
+4. ❌ FixedAssets tablosu DROP
+5. ❌ InvoiceLines.ExpenseDefinitionId kolon DROP
+6. ✅ Items.PurchaseAccountCode kolon ADD
+7. ✅ Items.SalesAccountCode kolon ADD
+8. ✅ Items.UsefulLifeYears kolon ADD
+9. ✅ Invoices.DocumentType kolon ADD
+
+**Eski Sistem → Yeni Sistem:**
+```
+ExpenseDefinition → Item (Type=Expense)
+ExpenseList → Purchase Invoice (DocumentType=ExpenseNote)
+FixedAsset → Item (Type=FixedAsset)
 ```
 
 ---
 
-## 🧪 Testing Scenarios
+## 🚀 Başlangıç
 
-### 1. Invoice + Payment Flow
-```bash
-# 1. Create sales invoice
-POST /api/invoices { type: "Sales", contactId: 5, lines: [...] }
-# Response: { id: 100, totalGross: "1770.00", balance: "1770.00" }
-
-# 2. Create payment
-POST /api/payments { 
-  linkedInvoiceId: 100, 
-  amount: "1770.00", 
-  direction: "In" 
-}
-# Response: Invoice balance = 0
-
-# 3. Verify balance
-GET /api/invoices/100
-# Response: { balance: "0.00" }
-```
-
-### 2. Expense Post to Bill
-```bash
-# 1. Create expense list
-POST /api/expense-lists { name: "Ocak Masrafları", lines: [...] }
-
-# 2. Review
-POST /api/expense-lists/1/review
-
-# 3. Post to bill with payment
-POST /api/expense-lists/1/post-to-bill {
-  supplierId: 10,
-  itemId: 3,
-  currency: "TRY",
-  createPayment: true,
-  paymentAccountId: 2
-}
-# Response: { createdInvoiceId: 101, postedExpenseCount: 5 }
-```
-
-### 3. Stock Movement
-```bash
-# 1. Create warehouse
-POST /api/warehouses { branchId: 1, code: "W01", name: "Ana Depo" }
-
-# 2. Purchase (stock in)
-POST /api/stock-movements {
-  warehouseId: 1,
-  itemId: 5,
-  type: "PurchaseIn",
-  quantity: "100.000"
-}
-
-# 3. Check stock
-GET /api/stocks?warehouseId=1&itemId=5
-# Response: { quantity: "100.000" }
-
-# 4. Sales (stock out)
-POST /api/stock-movements {
-  warehouseId: 1,
-  itemId: 5,
-  type: "SalesOut",
-  quantity: "10.000"
-}
-
-# 5. Verify
-GET /api/stocks?warehouseId=1&itemId=5
-# Response: { quantity: "90.000" }
-```
-
-### 4. Concurrency Test
-```bash
-# 1. Get record
-GET /api/invoices/100
-# Response: { rowVersion: "AAAAAAAAB9E=" }
-
-# 2. Two users try to update
-# User A:
-PUT /api/invoices/100 { name: "Updated A", rowVersion: "AAAAAAAAB9E=" }
-# Success: 200 OK
-
-# User B (same rowVersion):
-PUT /api/invoices/100 { name: "Updated B", rowVersion: "AAAAAAAAB9E=" }
-# Fail: 409 Conflict
-```
-
----
-
-## 🚀 Running the Project
-
-### Prerequisites
+### Gereksinimler
 - .NET 8 SDK
-- SQL Server (LocalDB or Express)
+- SQL Server 2019+
+- Node.js 18+ (Frontend için)
 
-### Setup
+### Kurulum
 ```bash
-# 1. Restore packages
-dotnet restore
+# Database oluştur
+dotnet ef database update
 
-# 2. Update connection string (appsettings.json)
-"ConnectionStrings": {
-  "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=AccountingDb;..."
-}
-
-# 3. Run migrations
-dotnet ef database update --project Accounting.Infrastructure
-
-# 4. Run API
+# API'yi çalıştır
 dotnet run --project Accounting.Api
-```
 
-### Swagger
-```
-https://localhost:5001/swagger
+# Test kullanıcılarıyla giriş yap (şifre: ...123!)
+admin@demo.local
+patron@demo.local
+muhasebe@demo.local
 ```
 
 ---
@@ -704,89 +634,18 @@ public Task<InvoiceDetailDto> Update(...)               // Update response
 
 ---
 
-## 📁 Project Structure
+## 📝 Notlar
 
-```
-Accounting.Api/
-├── Controllers/
-│   ├── ContactsController.cs
-│   ├── InvoicesController.cs
-│   ├── PaymentsController.cs
-│   ├── ExpenseListsController.cs
-│   ├── StocksController.cs
-│   └── ...
-└── Program.cs
+### Breaking Changes (v2.0.0)
+- ExpenseList modülü kaldırıldı → Purchase Invoice kullanın
+- FixedAsset entity kaldırıldı → Item.Type=FixedAsset kullanın
+- ProfitLoss raporu → IncomeExpense olarak yeniden adlandırıldı
+- Stok takibi sadece ItemType.Inventory için yapılıyor
 
-Accounting.Application/
-├── Contacts/
-│   ├── Commands/ (Create, Update, Delete)
-│   └── Queries/ (GetById, List)
-├── Invoices/
-├── Payments/
-├── ExpenseLists/
-├── Stocks/
-├── Warehouses/
-├── Cheques/
-├── Users/
-├── Roles/
-└── Common/
-    ├── Abstractions/ (IAppDbContext)
-    ├── Behaviors/ (Validation, Transaction)
-    ├── Errors/ (Exceptions)
-    └── Utils/ (Money, PagedResult)
-
-Accounting.Domain/
-├── Entities/
-│   ├── Contact.cs
-│   ├── Invoice.cs
-│   ├── Stock.cs
-│   └── ...
-├── Enums/
-│   ├── InvoiceType.cs
-│   └── StockMovementType.cs
-└── Common/ (Interfaces)
-
-Accounting.Infrastructure/
-├── Persistence/
-│   ├── AppDbContext.cs
-│   ├── Configurations/ (Entity configurations)
-│   └── Seed/ (DataSeeder)
-└── Interceptors/ (AuditSaveChangesInterceptor)
-```
-
----
-
-## 🎯 Next Steps (Future Features)
-
-- [x] Invoice → Stock integration (otomatik stok hareketi)
-- [x] Multi-branch stock transfer
-- [x] Item Category support
-- [x] Order Management (Quotes/Orders -> Invoice flow)
-- [x] User authentication & authorization (JWT + Roles)
-- [x] Cheque/Promissory Note Management
-- [x] Multi-Currency Support (Payments/Invoices)
-- [ ] Fixed Asset depreciation calculation
-- [ ] Reporting module (balance sheet, P&L)
-- [ ] Excel export support
-- [ ] Audit log tracking (Basic Audit implemented, UI needed)
-- [ ] Email notifications
-
----
-
-## 📝 Notes
-
-### Enums Namespace
-Tüm enum'lar `Accounting.Domain.Enums` namespace'inde toplanmıştır:
-- InvoiceType
-- PaymentDirection
-- ExpenseListStatus
-- StockMovementType
-- CashBankAccountType
-
-### Entity Naming
-- `ExpenseLine` (eski adı: Expense)
-- `InvoiceLine` (fatura kalemi)
-- Tüm liste entity'leri çoğul: `ExpenseLists`, `Invoices`, `Stocks`
+### Gelecek Özellikler
+- [ ] Gerçek COGS hesaplaması (FIFO/LIFO)
+- [ ] Envanter sayım modülü
+- [ ] İleri düzey raporlar (Bilanço, Gelir Tablosu)
 
 ---
 
